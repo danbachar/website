@@ -1,0 +1,1948 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Forwarding rules in the Grassroots BLE mesh</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ground:        #e7eaee;
+    --surface:       #fcfcfb;
+    --surface-sunk:  #f1f2f0;
+    --hairline:      #d3d7dc;
+    --hairline-soft: #e4e7ea;
+    --ink:           #0b0b0b;
+    --ink-2:         #52514e;
+    --ink-3:         #85847f;
+    --field:         #f7f8f7;
+    --link:          #c6ccd3;
+    --node:          #9aa3ac;
+
+    --s-oracle:   #2a78d6;
+    --s-flood:    #eb6834;
+    --s-hmulti:   #1baf7a;
+    --s-f3:       #eda100;
+    --s-hgateway: #e87ba4;
+    --s-hcentral: #008300;
+
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, "Cascadia Mono", Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+
+    --r: 3px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --ground:        #0e1013;
+      --surface:       #1a1a19;
+      --surface-sunk:  #141514;
+      --hairline:      #2e302f;
+      --hairline-soft: #232524;
+      --ink:           #ffffff;
+      --ink-2:         #c3c2b7;
+      --ink-3:         #8b8a82;
+      --field:         #131414;
+      --link:          #34383c;
+      --node:          #6b7076;
+
+      --s-oracle:   #3987e5;
+      --s-flood:    #d95926;
+      --s-hmulti:   #199e70;
+      --s-f3:       #c98500;
+      --s-hgateway: #d55181;
+      --s-hcentral: #008300;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground:        #0e1013;
+    --surface:       #1a1a19;
+    --surface-sunk:  #141514;
+    --hairline:      #2e302f;
+    --hairline-soft: #232524;
+    --ink:           #ffffff;
+    --ink-2:         #c3c2b7;
+    --ink-3:         #8b8a82;
+    --field:         #131414;
+    --link:          #34383c;
+    --node:          #6b7076;
+
+    --s-oracle:   #3987e5;
+    --s-flood:    #d95926;
+    --s-hmulti:   #199e70;
+    --s-f3:       #c98500;
+    --s-hgateway: #d55181;
+    --s-hcentral: #008300;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    margin: 0;
+    max-width: 64ch;
+    color: var(--ink-2);
+  }
+
+  /* ---------- mode switch ---------- */
+  .modes { display: flex; gap: 2px; background: var(--surface-sunk); border: 1px solid var(--hairline); border-radius: var(--r); padding: 2px; width: fit-content; }
+  .modes button {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .modes button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.10); }
+  .modes button:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+
+  /* ---------- instrument ---------- */
+  .rig { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: 20px; align-items: start; }
+  @media (max-width: 940px) { .rig { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+  }
+  .panel-hd {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hairline-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .sub-modes { display: inline-flex; gap: 2px; }
+  .sub-modes button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 9px; border: 1px solid var(--hairline); border-radius: 2px;
+    background: transparent; color: var(--ink-3); cursor: pointer;
+  }
+  .sub-modes button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .sub-modes button:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+  .field-wrap { position: relative; background: var(--field); border-radius: 0 0 var(--r) var(--r); }
+  canvas { display: block; cursor: crosshair; width: 100%; height: auto; border-radius: 0 0 var(--r) var(--r); }
+
+  .readout {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--hairline-soft);
+  }
+  .readout div { padding: 10px 14px; border-right: 1px solid var(--hairline-soft); }
+  .readout div:last-child { border-right: 0; }
+  .readout dt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 2px;
+  }
+  .readout dd {
+    margin: 0; font-family: var(--mono); font-size: 20px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+  .readout .unit { font-size: 11px; font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+
+  /* ---------- algorithm rail ---------- */
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .algos { display: flex; flex-direction: column; }
+  .algo {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    width: 100%;
+    text-align: left;
+    padding: 11px 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--hairline-soft);
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+  .algo:last-child { border-bottom: 0; }
+  .algo:hover { background: var(--surface-sunk); }
+  .algo:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: -2px; }
+  .algo[aria-pressed="true"] { background: var(--surface-sunk); }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; margin-top: 5px; background: var(--c); }
+  .algo[aria-pressed="true"] .swatch { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 26%, transparent); }
+  .algo-name, .algo-rule, .algo-arm { display: block; }
+  .algo-arm { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 3px; }
+  .algo-arm code { font-family: var(--mono); }
+  .algo-name { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .algo[aria-pressed="true"] .algo-name { color: var(--c); }
+  .algo-rule { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 2px; vertical-align: 1px;
+    border: 1px solid currentColor; margin-left: 6px; color: var(--ink-3);
+  }
+
+  .controls { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); flex: 0 0 auto; }
+  .row output { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink); margin-left: auto; }
+  input[type="range"] { flex: 1 1 auto; accent-color: var(--s-oracle); min-width: 0; }
+  .btn {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 2px;
+    background: var(--surface-sunk); color: var(--ink); cursor: pointer; flex: 1 1 auto;
+  }
+  .btn:hover { border-color: var(--ink-3); }
+  .btn:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+  .btn-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+  .status {
+    margin: 0; padding: 10px 14px; border-top: 1px solid var(--hairline-soft);
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.5; color: var(--ink-2);
+  }
+  .status b { color: var(--c, var(--ink)); font-weight: 600; }
+  .sk-group { display: flex; flex-direction: column; gap: 9px; padding-top: 11px; border-top: 1px solid var(--hairline-soft); }
+  .sk-group.off { opacity: 0.45; }
+  .sk-hd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .sk-hd span { text-transform: none; letter-spacing: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 12px 14px; border-top: 1px solid var(--hairline-soft); }
+  .legend span { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1.5px solid var(--c, var(--ink-3)); }
+  .seg { width: 12px; height: 0; display: inline-block; border-top: 1px solid var(--ink-3); opacity: .6; }
+  .seg.solid { border-top: 2px solid var(--c, var(--ink-3)); opacity: 1; }
+  .seg.dashed { border-top: 2px dashed var(--c, var(--ink-3)); opacity: 1; }
+
+  /* ---------- control plane ---------- */
+  .cp { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: 20px; align-items: start; }
+  @media (max-width: 940px) { .cp { grid-template-columns: minmax(0, 1fr); } }
+  .steps { display: flex; flex-direction: column; }
+  .step {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 14px;
+    padding: 14px; border-bottom: 1px solid var(--hairline-soft);
+    opacity: 0.34; transition: opacity .45s ease, background .45s ease;
+  }
+  .step:last-child { border-bottom: 0; }
+  .step.on { opacity: 1; }
+  .step.on.extra { background: color-mix(in srgb, var(--c) 8%, transparent); }
+  .step-n {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; padding-top: 3px;
+  }
+  .step h3 { margin: 0 0 3px; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .step.extra h3 { color: var(--c); }
+  .step p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; max-width: 62ch; }
+  .wire {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; padding: 3px 7px;
+    border: 1px dashed var(--hairline); border-radius: 2px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-2);
+  }
+  .step.extra .wire { border-color: color-mix(in srgb, var(--c) 55%, transparent); border-style: solid; }
+  .arrow { color: var(--ink-3); }
+
+  .ledger { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .ledger h3 { margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; }
+  .ledger p { margin: 0; font-size: 13px; color: var(--ink-2); }
+  .cost { display: flex; flex-direction: column; gap: 7px; }
+  .cost-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: baseline; font-size: 12.5px; }
+  .cost-row span:last-child { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-align: right; }
+  .verdict {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.5;
+    padding: 10px 12px; border-left: 2px solid var(--c);
+    background: var(--surface-sunk); color: var(--ink-2);
+  }
+
+  /* ---------- measured ---------- */
+  .measured { display: flex; flex-direction: column; gap: 14px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: 13px; color: var(--ink-2); padding: 0 0 10px; max-width: 70ch; }
+  th, td { padding: 7px 10px; text-align: right; font-family: var(--mono); font-size: 12.5px; border-bottom: 1px solid var(--hairline-soft); }
+  th { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 400; }
+  th:first-child, td:first-child { text-align: left; }
+  td.name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .cliff { color: var(--s-flood); font-weight: 600; }
+  .scroller { overflow-x: auto; }
+
+  .charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0 14px 4px; }
+  @media (max-width: 900px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+  .chart { display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .chart h3 { margin: 0; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: -0.01em; }
+  .chart p { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.4; min-height: 4.2em; }
+  .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .ax { font-family: var(--mono); font-size: 9.5px; fill: var(--ink-3); }
+  .unit-cap { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .grid-line { stroke: var(--hairline-soft); stroke-width: 1; }
+  .keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px 20px; padding: 6px 14px 16px; }
+  @media (max-width: 900px) { .keys { grid-template-columns: minmax(0, 1fr); } }
+  .key { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 8px; align-items: start; }
+  .key .dot { margin-top: 5px; }
+  .key b { font-family: var(--mono); font-size: 11.5px; font-weight: 600; display: block; }
+  .key span { font-size: 11.5px; color: var(--ink-2); line-height: 1.35; display: block; }
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s ease;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 2px;
+    padding: 7px 9px; font-family: var(--mono); font-size: 10.5px; line-height: 1.55;
+    box-shadow: 0 4px 14px rgba(0,0,0,.16); z-index: 5; width: 152px;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .tip-hd { color: var(--ink-3); letter-spacing: 0.06em; margin-bottom: 3px; }
+  .tip-row { display: flex; align-items: center; gap: 6px; }
+  .tip-row b { font-weight: 600; margin-left: auto; }
+  /* ---------- model ---------- */
+  .model { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
+  @media (max-width: 900px) { .model { grid-template-columns: minmax(0, 1fr); } }
+  .model-col { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .model-col + .model-col { border-left: 1px solid var(--hairline-soft); }
+  @media (max-width: 900px) { .model-col + .model-col { border-left: 0; border-top: 1px solid var(--hairline-soft); } }
+  .model h3 {
+    margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 400;
+  }
+  .model p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; max-width: 60ch; }
+  .model p b { color: var(--ink); font-weight: 600; }
+  .eq {
+    padding: 10px 12px; background: var(--surface-sunk); border-radius: 2px;
+    overflow-x: auto; font-size: 15px;
+  }
+  .eq math { font-family: var(--mono); }
+  .defs { display: flex; flex-direction: column; gap: 7px; }
+  .def { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; font-size: 12.5px; align-items: baseline; }
+  .def dt { font-family: var(--mono); color: var(--ink); }
+  .def dd { margin: 0; color: var(--ink-2); line-height: 1.4; }
+  .params { width: 100%; border-collapse: collapse; }
+  .params td { padding: 5px 8px; font-size: 12.5px; border-bottom: 1px solid var(--hairline-soft); }
+  .params tr:last-child td { border-bottom: 0; }
+  .params td:first-child { font-family: var(--mono); width: 46px; color: var(--ink); }
+  .params td:last-child { font-family: var(--mono); text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .params td:nth-child(2) { color: var(--ink-2); }
+  .note { font-size: 12.5px; color: var(--ink-3); max-width: 74ch; margin: 0; }
+  .note code { font-family: var(--mono); font-size: 11.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">GSN · BLE mesh · simulations/ORACLE-EXPERIMENT.md</div>
+    <h1>Six forwarding rules for the BLE mesh</h1>
+    <p class="standfirst">Each rule delivers the same message on the same topology, between the same
+      sender and recipient. We compare what each spends on the air, and what each must learn before it
+      can forward at all.</p>
+  </header>
+
+  <div class="modes" role="tablist" aria-label="View">
+    <button role="tab" id="tab-data" aria-selected="true" aria-controls="view-data">Data plane</button>
+    <button role="tab" id="tab-ctrl" aria-selected="false" aria-controls="view-ctrl">Control plane</button>
+  </div>
+
+  <!-- ============ DATA PLANE ============ -->
+  <section class="rig" id="view-data" role="tabpanel" aria-labelledby="tab-data">
+    <div class="panel">
+      <div class="panel-hd">
+        <span>Live mesh · traffic runs continuously</span>
+        <span id="topo-readout">—</span>
+      </div>
+      <div class="field-wrap"><canvas id="field" width="1200" height="760"></canvas></div>
+      <dl class="readout">
+        <div><dt>Our message · hops</dt><dd id="m-hops">—</dd></div>
+        <div><dt>Our message · transmissions</dt><dd id="m-tx">—</dd></div>
+        <div><dt>Our message · vs flood</dt><dd id="m-ratio">—</dd></div>
+        <div><dt>Mesh · packets in custody</dt><dd id="m-hold">0</dd></div>
+      </dl>
+      <p class="status" id="status">Press Send to deliver one message under the selected rule.</p>
+      <p class="status" id="inspect" hidden></p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--ink)"></i>sender (click a node)</span>
+        <span><i class="dot" style="background:var(--s-oracle)"></i>recipient (click another)</span>
+        <span><i class="dot" id="lg-hold"></i>has seen our message</span>
+        <span><i class="dot" style="background:var(--node);opacity:.5"></i>carrying background traffic</span>
+        <span id="lg-entry" hidden><i class="ring"></i><span id="lg-entry-text"></span></span>
+        <span id="lg-inter" hidden><i class="seg"></i>link leaving a cluster</span>
+        <span id="lg-form" hidden><i class="seg solid"></i>link just formed</span>
+        <span id="lg-drop" hidden><i class="seg dashed"></i>link just dropped</span>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="panel">
+        <div class="panel-hd"><span>Forwarding rule</span></div>
+        <div class="algos" id="algos"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span>Field</span></div>
+        <div class="controls">
+          <div class="row">
+            <label for="nodes">Per cell</label>
+            <input type="range" id="nodes" min="1" max="20" step="1" value="8">
+            <output id="nodes-out">8 · 128 total</output>
+          </div>
+          <div class="row">
+            <label for="p-links">Links</label>
+            <input type="range" id="p-links" min="1" max="12" step="1" value="7">
+            <output id="p-links-out">7 per node</output>
+          </div>
+          <div class="row">
+            <label for="p-world">Hall</label>
+            <input type="range" id="p-world" min="0" max="3" step="1" value="0">
+            <output id="p-world-out">200 m</output>
+          </div>
+          <div class="row">
+            <label for="p-cell">Cell</label>
+            <input type="range" id="p-cell" min="0" max="4" step="1" value="3">
+            <output id="p-cell-out">50 m · 4×4</output>
+          </div>
+          <div class="row">
+            <label for="p-age">Expiry</label>
+            <input type="range" id="p-age" min="100" max="3000" step="100" value="1500">
+            <output id="p-age-out">1500 ticks</output>
+          </div>
+          <div class="row">
+            <label for="p-tick">Speed</label>
+            <input type="range" id="p-tick" min="40" max="400" step="20" value="140">
+            <output id="p-tick-out">140 ms</output>
+          </div>
+          <div class="row">
+            <label for="seed">Seed</label>
+            <input type="range" id="seed" min="1" max="12" step="1" value="3">
+            <output id="seed-out">3</output>
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn btn-primary" id="send">Send message</button>
+            <button class="btn" id="replay">Random pair</button>
+          </div>
+          <div class="sk-group" id="sk-group">
+            <div class="sk-hd">Score parameters <span id="sk-scope">— top-3 only</span></div>
+            <div class="row">
+              <label for="p-alpha">&#945;</label>
+              <input type="range" id="p-alpha" min="0" max="1" step="0.25" value="0.5">
+              <output id="p-alpha-out">0.50</output>
+            </div>
+            <div class="row">
+              <label for="p-beta">&#946;</label>
+              <input type="range" id="p-beta" min="0" max="1" step="0.25" value="0">
+              <output id="p-beta-out">0.00</output>
+            </div>
+            <div class="row">
+              <label for="p-fanout">F</label>
+              <input type="range" id="p-fanout" min="1" max="7" step="1" value="3">
+              <output id="p-fanout-out">3</output>
+            </div>
+            <p class="note" style="margin:0" id="sk-note"></p>
+          </div>
+          <p class="note" style="margin:2px 0 0"><b>Setup.</b> <em>Hall</em> sets the square's side. A
+            cluster is one cell of it and the radio reaches one cell side, so <em>Cell</em> sets the
+            cluster size, the range and how many clusters the hall divides into at once — which is also
+            why every member can hear into a neighbouring cluster. The seed fixes the topology and the
+            sender–recipient pair, so switching rules repeats the same delivery, paired per seed.
+            Speed is wall-clock only — a shorter tick runs the same mesh faster, and the congested
+            rules need it.</p>
+          <p class="note" style="margin:0"><b>Scope.</b> The mesh carries background traffic at all
+            times, with custody capped at 60 packets, hop budget 7, and idle link rotation for top-3 —
+            the only rule that runs with the policy on. A node drives <em>all</em> its links at once and
+            its radio's rate is split across the ones transferring, on top of a coarse contention
+            penalty; concurrency and that divisor have to agree, and when they did not the flood looked
+            far healthier than it is. Our message is injected into that running mesh. The field shows
+            mechanism; every rate we report comes from the measured runs below.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="sends-panel" hidden>
+    <div class="panel-hd">
+      <span>Sends on this pair</span><span id="sends-hd">—</span>
+    </div>
+    <div class="charts" id="send-charts"></div>
+    <div class="keys" id="send-keys"></div>
+    <p class="note" style="padding: 0 14px 14px">One point per completed send, in the order you made
+      them. A curve is one rule with one set of parameters, so changing F or the weights starts a new
+      curve rather than moving an old one. Reconfiguring the field clears everything, since the runs
+      would no longer be comparable.</p>
+  </section>
+
+  <!-- ============ CONTROL PLANE ============ -->
+  <section class="cp" id="view-ctrl" role="tabpanel" aria-labelledby="tab-ctrl" hidden>
+    <div class="panel">
+      <div class="panel-hd">
+        <span>Exchanged between two neighbors before any message moves</span>
+        <span id="cp-algo">—</span>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="rail">
+      <div class="panel">
+        <div class="panel-hd"><span>Forwarding rule</span></div>
+        <div class="algos" id="algos2"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span>Cost of the knowledge</span></div>
+        <div class="ledger" id="ledger"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ MODEL ============ -->
+  <section class="panel model">
+    <div class="model-col">
+      <h3>Suitability score</h3>
+      <p>Every peer advertises a score for itself. A node ranks its links by the score the
+        peer on the far side advertises — it never computes anything about that peer itself.</p>
+      <div class="eq"><math display="block"><mrow>
+        <msub><mi>S</mi><mi>k</mi></msub><mo>=</mo>
+        <mi>&#945;</mi><mo>&#8290;</mo><msub><mi>C</mi><mi>k</mi></msub>
+        <mo>+</mo><mi>&#946;</mi><mo>&#8290;</mo>
+        <mo stretchy="false">(</mo><mn>1</mn><mo>&#8722;</mo>
+        <msub><mi>&#961;</mi><mi>k</mi></msub><mo stretchy="false">)</mo>
+      </mrow></math></div>
+      <dl class="defs">
+        <div class="def"><dt>C<sub>k</sub></dt><dd>Centrality: distinct neighbors that completed a
+          transfer <em>to</em> k within the window W, over the link cap.
+          <math><mrow><msub><mi>C</mi><mi>k</mi></msub><mo>=</mo><mtext>min</mtext>
+          <mo stretchy="false">(</mo><mn>1</mn><mo>,</mo>
+          <mfrac><mrow><msub><mi>f</mi><mi>k</mi></msub><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo></mrow>
+          <msub><mi>D</mi><mi>max</mi></msub></mfrac><mo stretchy="false">)</mo></mrow></math></dd></div>
+        <div class="def"><dt>&#961;<sub>k</sub></dt><dd>Buffer occupancy of k, as a fraction of its
+          custody store.
+          <math><mrow><msub><mi>&#961;</mi><mi>k</mi></msub><mo>=</mo>
+          <mfrac><mrow><mi>B</mi><mo>&#8722;</mo><msub><mi>B</mi><mi>free</mi></msub></mrow><mi>B</mi></mfrac></mrow></math></dd></div>
+      </dl>
+      <h3>Gate and lanes</h3>
+      <p>A link is a lane if its peer passes the gate. The node floods each message on its top
+        F lanes only; messages addressed to a link's own peer bypass lanes entirely.</p>
+      <div class="eq"><math display="block"><mrow>
+        <msub><mi>L</mi><mi>k</mi></msub><mo>=</mo>
+        <mtext>top-</mtext><mi>F</mi><mspace width="0.2em"/>
+        <mo stretchy="false">{</mo>
+        <mi>j</mi><mo>&#8712;</mo><mi>N</mi><mo stretchy="false">(</mo><mi>k</mi><mo stretchy="false">)</mo>
+        <mo>:</mo><msub><mi>S</mi><mi>j</mi></msub><mo>&#8805;</mo><mi>&#952;</mi>
+        <mo stretchy="false">}</mo>
+      </mrow></math></div>
+    </div>
+
+    <div class="model-col">
+      <h3>On the wire</h3>
+      <p>Both terms ride the peer's ANNOUNCE, quantized to one byte and refreshed once per
+        announce epoch, so every decision runs on values as stale as that interval.
+        Quantization is load-bearing: with raw doubles, jitter in &#961; reshuffles near-tied
+        rankings on every announce, and the resulting preemption storm aborts transfers
+        mesh-wide.</p>
+      <div class="eq"><math display="block"><mrow>
+        <mi>q</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo>
+        <mfrac><mrow><mtext>round</mtext><mo stretchy="false">(</mo><mn>255</mn><mi>x</mi><mo stretchy="false">)</mo></mrow><mn>255</mn></mfrac>
+      </mrow></math></div>
+      <h3>Parameters in these runs</h3>
+      <table class="params">
+        <tr><td>&#945;</td><td>weight on centrality</td><td>0.5</td></tr>
+        <tr><td>&#946;</td><td>weight on free buffer</td><td>0</td></tr>
+        <tr><td>&#952;</td><td>gate threshold, inclusive</td><td>0</td></tr>
+        <tr><td>F</td><td>lane fan-out</td><td>3</td></tr>
+        <tr><td>W</td><td>centrality window</td><td>60 s</td></tr>
+        <tr><td>D<sub>max</sub></td><td>concurrent link cap</td><td>7</td></tr>
+        <tr><td>&#8212;</td><td>announce interval</td><td>5 s</td></tr>
+      </table>
+      <p><b>With &#946; = 0 the score reduces to S<sub>k</sub> = &#945;C<sub>k</sub>:</b> this arm ranks
+        by centrality alone. &#952; = 0 under the inclusive gate admits every peer, including those
+        that have fed nobody yet.</p>
+      <p><b>&#946; was swept, and 0 is the right setting.</b> Against a fixed-&#946; control at the
+        same fan-out, &#946; &gt; 0 helps in one cell out of ten — by 0.005 at the sparsest — and
+        costs everywhere else, more so the denser the mesh. Letting each node scale its own &#946; by
+        its own buffer and centrality tracks between the two — at the sparsest density slightly
+        below both — and finds nothing new.
+        &#945; is not swept: top-F is a ranking, and a positive &#945; scales every peer's score
+        equally, so only the ratio &#946;/&#945; can reorder anything.</p>
+      <p><b>Removed from the model.</b> An earlier variant gated link admission on
+        &#961;<sub>k</sub> &lt; &#964;. Under saturation every peer sits at &#961; &#8776; 1, fails the
+        gate, and the flood starves mesh-wide, so &#964; is gone.</p>
+    </div>
+  </section>
+
+  <!-- ============ MEASURED ============ -->
+  <section class="panel measured">
+    <div class="panel-hd"><span>Measured · 2,750 runs · n = 50 per cell</span><span>stationary hall</span></div>
+    <div class="charts" id="charts"></div>
+    <div class="keys" id="keys"></div>
+    <div class="scroller" style="padding: 14px">
+      <table>
+        <caption>Delivery by node count, mean of fifty paired runs — five node placements,
+          ten replicates each. The flood has no working regime here: 0.404 at its sparsest, falling
+          from there. Cluster addressing holds above 0.96 throughout, at a twentieth of the
+          airtime.</caption>
+        <thead>
+          <tr><th scope="col">Rule</th><th scope="col">160</th><th scope="col">240</th><th scope="col">320</th><th scope="col">400</th><th scope="col">480</th><th scope="col">relays / delivered</th></tr>
+        </thead>
+        <tbody id="measured-body"></tbody>
+      </table>
+    </div>
+    <div class="note" style="padding: 0 14px 16px; display:flex; flex-direction:column; gap:8px">
+      <p style="margin:0"><b>Measures.</b> Relays per delivered message is our airtime proxy, listed at
+        480 nodes. A shortest path costs its hop count, so the oracle stays at 8.2 → 10.0 across a
+        threefold rise in node count while the flood goes 116 → 371: flooding costs <code>O(n)</code>
+        per message, directed forwarding <code>O(hops)</code>. Read the flood's median latency against
+        its delivery — it falls with density only because the slow messages stop arriving at all.</p>
+      <p style="margin:0"><b>Threats to validity.</b> The simulator keeps an exact set of seen packet
+        ids per peer; the implementation uses a Bloom filter of 96,000 bits over at most 10,000 items
+        at ~1% false positives, rotating every 5 minutes. The modelled seen-set never errs, never
+        fills and never forgets, so the sync exchange is cheaper here than on a device. The two errors
+        do not cancel: a false positive skips a packet the node lacks, costing delivery where copies
+        are fewest, while rotation forgets and old packets are reflooded, costing airtime where copies
+        are most. We report relays per delivered as a lower bound, for every rule.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------- algorithms
+  const ALGOS = [
+    { id: "flood", arm: "base", color: "--s-flood",
+      name: "Epidemic flood", short: "flood", tag: "implemented",
+      rule: "Relay every packet to every neighbor. The current implementation." },
+    { id: "f3", arm: "f3", color: "--s-f3",
+      name: "Top-3 by suitability", short: "top-3", tag: "implementable",
+      rule: "Relay on the top F links by the S_k its peer advertises. Measured at F = 3; adjustable in the field." },
+    { id: "hmulti", arm: "hmulti", color: "--s-hmulti",
+      name: "Cluster entry, no leader", short: "no leader", tag: "implementable",
+      rule: "Forward toward the recipient's cluster. Any member holding a link out of that cluster accepts it." },
+    { id: "hgateway", arm: "hgateway", color: "--s-hgateway",
+      name: "Cluster entry, one gateway", short: "gateway", tag: "needs election",
+      rule: "One entry point per cluster: the member with the most links leaving it. All inbound traffic crosses it." },
+    { id: "hcentral", arm: "hcentral", color: "--s-hcentral",
+      name: "Cluster entry, one coordinator", short: "coordinator", tag: "needs election",
+      rule: "One entry point per cluster: the member most central within it. All inbound traffic crosses it." },
+    { id: "oracle", arm: "oracle", color: "--s-oracle",
+      name: "Shortest path (oracle)", short: "shortest path", tag: "not implementable",
+      rule: "Relay only to peers strictly closer to the recipient on the live link graph. An upper bound, not a design." },
+  ];
+  let current = "hmulti";
+  const algoOf = id => ALGOS.find(a => a.id === id);
+  const colorOf = id => getComputedStyle(document.documentElement)
+    .getPropertyValue(algoOf(id).color).trim();
+
+  // ---------------------------------------------------------------- topology
+  const TTL = 7;
+  // The concurrent-link cap: how many peers a device holds a connection to at
+  // once, out of everything it can hear. The gap between the two is the study's
+  // whole subject, so it is adjustable here.
+  let MAX_LINKS = 7;
+  // Every node and link is redrawn each frame, so the field stays honest only
+  // while it stays drawable. Past this the per-cell count is trimmed and says so.
+  const MAX_NODES = 4000;
+  // Cell sizes that divide the hall evenly, so the grid stays square, and hall
+  // sizes every cell divides (200 is their least common multiple).
+  const CELLS = [20, 25, 40, 50, 100];
+  const WORLDS = [200, 400, 600, 800];
+  // One quantity sets the geometry. A cluster is one cell of a FIXED 200 m hall,
+  // the radio reaches exactly one cell side, and the grid is however many cells
+  // fit. So a smaller cell means more, smaller clusters in the same space — the
+  // hall does not zoom, it subdivides.
+  let WORLD = 200, CELL = 50, RANGE = CELL, GRID = WORLD / CELL;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  let G = null;        // {nodes, adj, src, dst, meanRange, meanLink}
+  let pairSalt = 0;    // which sender/recipient draw we are on
+
+  function buildTopology(n, seed, pairSalt) {
+    const rnd = mulberry32(seed * 7919 + 17);
+    // n is nodes PER CELL, so every cluster holds exactly the same number and
+    // the total follows the grid — the same shape as the harness, where
+    // Group.nrofHosts is hosts-per-cluster.
+    const nodes = [];
+    const cells = GRID * GRID;
+    for (let k = 0; k < n * cells; k++) {
+      const cluster = k % cells;
+      const cx = cluster % GRID, cy = (cluster / GRID) | 0;
+      nodes.push({                       // uniform over the whole cell
+        x: (cx + rnd()) * CELL,
+        y: (cy + rnd()) * CELL,
+        cluster,
+      });
+    }
+
+    // range graph
+    const inRange = nodes.map(() => []);
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        if (dx * dx + dy * dy <= RANGE * RANGE) { inRange[i].push(j); inRange[j].push(i); }
+      }
+    }
+    // greedy link admission, per-node discovery order, capped at MAX_LINKS
+    const adj = nodes.map(() => []);
+    const order = nodes.map((_, i) => i);
+    for (let k = order.length - 1; k > 0; k--) {
+      const s = Math.floor(rnd() * (k + 1)); [order[k], order[s]] = [order[s], order[k]];
+    }
+    for (const i of order) {
+      const cand = inRange[i].slice();
+      for (let k = cand.length - 1; k > 0; k--) {
+        const s = Math.floor(rnd() * (k + 1)); [cand[k], cand[s]] = [cand[s], cand[k]];
+      }
+      for (const j of cand) {
+        if (adj[i].length >= MAX_LINKS) break;
+        if (adj[j].length >= MAX_LINKS || adj[i].includes(j)) continue;
+        adj[i].push(j); adj[j].push(i);
+      }
+    }
+
+    // a sender and a recipient in different clusters, as far apart as the draw allows.
+    // Drawn from its own stream so a new pair never disturbs the topology.
+    const prnd = mulberry32(seed * 104729 + pairSalt * 1301 + 7);
+    let src = 0, dst = 0, best = -1;
+    for (let t = 0; t < 60; t++) {
+      const a = Math.floor(prnd() * nodes.length), b = Math.floor(prnd() * nodes.length);
+      if (nodes[a].cluster === nodes[b].cluster) continue;
+      const d = Math.hypot(nodes[a].x - nodes[b].x, nodes[a].y - nodes[b].y);
+      if (d > best) { best = d; src = a; dst = b; }
+    }
+
+    const meanRange = inRange.reduce((s, l) => s + l.length, 0) / nodes.length;
+    const meanLink = adj.reduce((s, l) => s + l.length, 0) / nodes.length;
+    return { nodes, adj, inRange, src, dst, meanRange, meanLink };
+  }
+
+  const bfs = (adj, sources) => {
+    const d = new Array(adj.length).fill(Infinity);
+    const q = [];
+    for (const s of sources) { d[s] = 0; q.push(s); }
+    for (let h = 0; h < q.length; h++) {
+      const v = q[h];
+      for (const w of adj[v]) if (d[w] === Infinity) { d[w] = d[v] + 1; q.push(w); }
+    }
+    return d;
+  };
+
+  // Who may accept inbound traffic for the recipient's cluster.
+  function entryPoints(g, rule, cluster) {
+    const target = cluster === undefined ? g.nodes[g.dst].cluster : cluster;
+    const members = [];
+    for (let i = 0; i < g.nodes.length; i++) if (g.nodes[i].cluster === target) members.push(i);
+    if (rule === "hmulti") {
+      const boundary = members.filter(i => g.adj[i].some(j => g.nodes[j].cluster !== g.nodes[i].cluster));
+      return boundary.length ? boundary : members;
+    }
+    if (rule === "hgateway") {
+      let best = members[0], bestN = -1;
+      for (const i of members) {
+        const ext = g.adj[i].filter(j => g.nodes[j].cluster !== g.nodes[i].cluster).length;
+        if (ext > bestN) { bestN = ext; best = i; }
+      }
+      return [best];
+    }
+    // hcentral — smallest total hop distance to the rest of its own cluster
+    let best = members[0], bestCost = Infinity;
+    for (const i of members) {
+      const d = bfs(g.adj, [i]);
+      let c = 0; for (const m of members) c += Number.isFinite(d[m]) ? d[m] : g.nodes.length;
+      if (c < bestCost) { bestCost = c; best = i; }
+    }
+    return [best];
+  }
+
+  // ---------------------------------------------------------------- rules
+  // Hop distances, cached per destination and invalidated when the link set
+  // changes — the same contract as TopologyOracle in the simulator.
+  const OC = { dist: new Map(), entry: new Map(), entryDist: new Map() };
+  const bumpGraph = () => { OC.dist.clear(); OC.entry.clear(); OC.entryDist.clear(); };
+  function distTo(dst) {
+    if (!OC.dist.has(dst)) OC.dist.set(dst, bfs(G.adj, [dst]));
+    return OC.dist.get(dst);
+  }
+  function entrySet(cluster, rule) {
+    const key = rule + ":" + cluster;
+    if (!OC.entry.has(key)) OC.entry.set(key, new Set(entryPoints(G, rule, cluster)));
+    return OC.entry.get(key);
+  }
+  /** Hop distances to dst over the recipient cluster's own links only. */
+  function distWithin(dst) {
+    const key = "in:" + dst;
+    if (!OC.dist.has(key)) {
+      const dc = G.nodes[dst].cluster;
+      const adj = G.adj.map((links, i) =>
+        G.nodes[i].cluster === dc ? links.filter(j => G.nodes[j].cluster === dc) : []);
+      OC.dist.set(key, bfs(adj, [dst]));
+    }
+    return OC.dist.get(key);
+  }
+
+  function distToEntry(cluster, rule) {
+    const key = rule + ":" + cluster;
+    if (!OC.entryDist.has(key)) OC.entryDist.set(key, bfs(G.adj, [...entrySet(cluster, rule)]));
+    return OC.entryDist.get(key);
+  }
+
+  /** C_k: distinct neighbors that fed k inside the window, over the link cap. */
+  function centrality(k) {
+    if (!live) return 0;
+    let f = 0;
+    for (const [, t] of live.fedBy[k]) if (live.t - t <= CENTRALITY_W) f++;
+    return Math.min(1, f / MAX_LINKS);
+  }
+  /** S_k = alpha*C_k + beta*(1 - rho_k), on the values the peer advertises. */
+  function suitability(k) {
+    const rho = live ? Math.min(1, live.hold[k].size / CUSTODY_CAP) : 0;
+    return SK.alpha * centrality(k) + SK.beta * (1 - rho);
+  }
+
+  /**
+   * Which of node i's links carry a copy addressed to dst, under `rule`.
+   *
+   * `eligible` removes peers that already hold this packet BEFORE the fan-out
+   * cap is applied, so top-F means the top F peers that can still use it.
+   * Capping first and filtering after would waste lanes on peers that would
+   * refuse the offer, and could leave a packet stuck behind F peers that all
+   * hold it already.
+   */
+  function ruleTargets(i, dst, rule, eligible = () => true) {
+    const g = G, peers = g.adj[i].filter(eligible);
+    if (rule === "flood") return peers.slice();
+    if (rule === "f3") {
+      // Top-F by the peer's advertised S_k, gate inclusive. Ranking by a
+      // quantity that moves slowly keeps the lane set stable; ranking by raw
+      // degree made it reshuffle on every link rotation.
+      const lanes = peers.filter(p => suitability(p) >= SK.theta)
+        .sort((a, b) => suitability(b) - suitability(a) || a - b)
+        .slice(0, SK.F);
+      // A message addressed to a link's own peer bypasses lanes entirely:
+      // delivery is never sacrificed to the fan-out cap.
+      if (peers.includes(dst) && !lanes.includes(dst)) lanes.push(dst);
+      return lanes;
+    }
+    if (rule === "oracle") {
+      const d = distTo(dst), here = d[i];
+      return peers.filter(p => d[p] < here);
+    }
+    const dc = g.nodes[dst].cluster;
+    if (g.nodes[i].cluster === dc) {
+      // Inside the recipient's cluster the message routes WITHIN it, on the
+      // cluster's own links. Measuring progress on the whole link graph while
+      // restricting the hand-off to members strands a copy whose shortest path
+      // leaves the cluster: no member is "closer" and it stops. If the cluster
+      // is internally partitioned the inside distance is infinite, and the
+      // message falls back to the global gradient rather than sitting still.
+      const din = distWithin(dst), inside = din[i];
+      if (Number.isFinite(inside)) {
+        return peers.filter(p => p === dst
+          || (g.nodes[p].cluster === dc && din[p] < inside));
+      }
+      const d = distTo(dst), here = d[i];
+      return peers.filter(p => d[p] < here);
+    }
+    const entry = entrySet(dc, rule), d = distToEntry(dc, rule), here = d[i];
+    const out = [];
+    for (const p of peers) {
+      if (p === dst) { out.push(p); continue; }
+      if (g.nodes[p].cluster === dc && !entry.has(p)) continue;  // one door
+      if (d[p] < here) out.push(p);
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- our message
+  // One message we choose the endpoints for, injected into the running mesh and
+  // followed while the background traffic continues around it.
+  let sim = null;   // retained only so the headless baseline can share the rules
+
+  function startSim() {
+    sim = {
+      rule: current,
+      seen: new Array(G.nodes.length).fill(false),
+      ttl: new Array(G.nodes.length).fill(-1),
+      holders: [G.src], transfers: [], pending: [G.src],
+      tx: 0, round: 0, hops: null, done: false,
+    };
+    sim.seen[G.src] = true; sim.ttl[G.src] = TTL;
+  }
+
+  function stepSim() {
+    const s = sim;
+    if (!s || s.done) return;
+    const relayers = s.pending; s.pending = []; s.round++;
+    for (const i of relayers) {
+      if (s.ttl[i] <= 0 && i !== G.src) continue;
+      for (const p of ruleTargets(i, G.dst, s.rule)) {
+        if (s.seen[p]) continue;
+        s.tx++;
+        s.transfers.push({ from: i, to: p, born: performance.now(), ttl: s.ttl[i] - 1 });
+      }
+    }
+    if (!s.transfers.length && !s.pending.length) s.done = true;
+  }
+
+  function land(tr) {
+    const s = sim;
+    if (s.seen[tr.to]) return;
+    s.seen[tr.to] = true; s.ttl[tr.to] = tr.ttl; s.holders.push(tr.to);
+    if (tr.to === G.dst && s.hops === null) s.hops = TTL - tr.ttl;
+    if (tr.ttl > 0 && tr.to !== G.dst) s.pending.push(tr.to);
+  }
+
+  /** Instant, silent run — the paired flood baseline every ratio is against. */
+  function runHeadless(src, dst, rule) {
+    const seen = new Array(G.nodes.length).fill(false);
+    const ttl = new Array(G.nodes.length).fill(-1);
+    seen[src] = true; ttl[src] = TTL;
+    let frontier = [src], tx = 0, hops = null;
+    for (let r = 0; r < 40 && frontier.length; r++) {
+      const next = [];
+      for (const i of frontier) {
+        if (ttl[i] <= 0 && i !== src) continue;
+        for (const p of ruleTargets(i, dst, rule, q => !seen[q])) {
+          tx++; seen[p] = true; ttl[p] = ttl[i] - 1;
+          if (p === dst && hops === null) hops = TTL - ttl[p];
+          if (ttl[p] > 0 && p !== dst) next.push(p);
+        }
+      }
+      frontier = next;
+    }
+    return { tx, hops, delivered: seen[dst] };
+  }
+
+  // ---------------------------------------------------------------- live mesh
+  // Sustained traffic, custody, and link rotation. MECHANISM ONLY: this loop
+  // reports what is happening, never a delivery ratio or relays-per-delivered.
+  // Those numbers come from the measured runs, not from here.
+  const IDLE_WINDOW = 90;   // ticks a link may stay quiet before it is a candidate
+  const CENTRALITY_W = 150; // sliding window for C_k, in ticks
+  // The measured f3 arm's parameters. Editable in the field; the charts below
+  // are always the measured values, so the field says when it has drifted.
+  const MEASURED_SK = { alpha: 0.5, beta: 0, theta: 0, F: 3 };
+  const SK = { ...MEASURED_SK };
+  const CUSTODY_CAP = 60;   // packets a node will hold for others
+  const GEN_EVERY = 7;      // ticks between new background messages
+  // Custody is age-bounded as well as size-bounded. The app drops at 6 h, which
+  // is the long-stop for a copy that can never move, not the usual reaper — this
+  // is the same role at the field's scale.
+  let MAX_AGE = 1500;       // ticks a copy may sit in custody before it is dropped
+  let TICK_MS = 140;        // milliseconds of wall clock per simulated tick
+
+  let live = null;
+
+  function startLive() {
+    const n = G.nodes.length;
+    live = {
+      rule: current, t: 0, nextId: 1,
+      dstOf: new Map(),                       // message id -> destination
+      bornOf: new Map(),                      // message id -> tick it was created
+      agedOut: 0,
+      hold: Array.from({ length: n }, () => new Map()),  // node -> id -> ttl
+      seen: Array.from({ length: n }, () => new Set()),
+      lanes: new Map(),         // "holder:id" -> the links chosen for that packet
+      linkBusy: new Map(),      // link -> tick it frees; a node drives all its links
+      inFlightAt: new Array(n).fill(0),
+      fedBy: Array.from({ length: n }, () => new Map()),   // node -> feeder -> tick
+      lastTraffic: new Map(), formedAt: new Map(), lastLinked: new Map(),
+      lastRotation: new Array(n).fill(-IDLE_WINDOW),
+      transfers: [], flash: new Map(),
+      created: 0, delivered: 0, tx: 0, rotations: 0,
+    };
+    for (let i = 0; i < n; i++) for (const j of G.adj[i]) {
+      live.formedAt.set(lk(i, j), 0); live.lastTraffic.set(lk(i, j), 0);
+    }
+  }
+  const lk = (a, b) => a < b ? a + ":" + b : b + ":" + a;
+
+  /** In-range stations transmitting right now — the contention denominator. */
+  function busyNear(i) {
+    let a = 1;
+    for (const j of G.inRange[i]) if (live.inFlightAt[j] > 0) a++;
+    return a;
+  }
+
+  function liveStep() {
+    const L = live, n = G.nodes.length;
+    L.t++;
+
+    // 1. new traffic
+    if (L.t % GEN_EVERY === 0) {
+      const src = (Math.random() * n) | 0;
+      let dst = (Math.random() * n) | 0;
+      if (dst === src) dst = (dst + 1) % n;
+      const id = L.nextId++;
+      L.dstOf.set(id, dst);
+      L.bornOf.set(id, L.t);
+      L.hold[src].set(id, TTL);
+      L.seen[src].add(id);
+      L.created++;
+    }
+
+    // 2. One transfer per LINK per tick, but a packet is offered on every lane
+    //    the rule picks for it. The radio is time-multiplexed across the links a
+    //    node is driving, so its rate is divided by that count.
+    for (let i = 0; i < n; i++) {
+      if (!L.hold[i].size) continue;
+      for (const [id, ttl] of [...L.hold[i]]) {
+        const dst = L.dstOf.get(id);
+        if (dst === undefined) { L.hold[i].delete(id); L.lanes.delete(i + ":" + id); continue; }
+        const targets = ttl <= 0
+          ? (G.adj[i].includes(dst) && !L.seen[dst].has(id) ? [dst] : [])  // hops spent
+          : lanesFor(i, id).filter(p => !L.seen[p].has(id));
+        for (const peer of targets) {
+          const key = lk(i, peer);
+          if ((L.linkBusy.get(key) ?? 0) > L.t) continue;            // link busy
+          const a = busyNear(i);
+          const share = Math.max(1, L.inFlightAt[i] + 1);            // one radio, split
+          const dur = Math.max(1, Math.round(share * Math.sqrt(a * Math.log(Math.max(a, 2))) / 2));
+          L.linkBusy.set(key, L.t + dur);
+          L.inFlightAt[i]++; L.inFlightAt[peer]++;
+          L.tx++;
+          if (L.track && id === L.track.id) L.track.tx++;
+          L.transfers.push({ from: i, to: peer, id, ttl: ttl - 1,
+                             born: performance.now(), ms: dur * TICK_MS });
+        }
+      }
+    }
+
+    // 2b. follow our message: copies alive, for its memory footprint
+    if (L.track && !L.track.done && L.dstOf.has(L.track.id)) {
+      let c = 0;
+      for (let i = 0; i < n; i++) if (L.hold[i].has(L.track.id)) c++;
+      L.track.copiesSum += c + L.transfers.filter(t => t.id === L.track.id).length;
+      L.track.ticks++;
+    }
+
+    // 3. arrivals
+    const still = [];
+    for (const tr of L.transfers) {
+      if (performance.now() - tr.born < tr.ms) { still.push(tr); continue; }
+      L.inFlightAt[tr.from]--; L.inFlightAt[tr.to]--;
+      const dst = L.dstOf.get(tr.id);
+      L.lastTraffic.set(lk(tr.from, tr.to), L.t);
+      L.fedBy[tr.to].set(tr.from, L.t);          // the centrality signal
+      if (L.seen[tr.to].has(tr.id)) continue;
+      L.seen[tr.to].add(tr.id);
+      if (dst === undefined) continue;        // delivered while this copy flew
+      if (tr.to === dst) {
+        if (L.track && tr.id === L.track.id && L.track.hops === null) {
+          L.track.hops = TTL - tr.ttl; L.track.at = L.t - L.track.born; L.track.done = true;
+          recordSend(L.track, "arrived");
+        }
+        L.delivered++;
+        L.dstOf.delete(tr.id);                       // custody release, everywhere
+        for (let k = 0; k < n; k++) L.hold[k].delete(tr.id);
+      } else {
+        L.hold[tr.to].set(tr.id, tr.ttl);
+        if (L.hold[tr.to].size > CUSTODY_CAP) {
+          L.hold[tr.to].delete(L.hold[tr.to].keys().next().value);  // drop oldest
+        }
+      }
+    }
+    L.transfers = still;
+
+    // 4. Two sweeps, as in the simulator. A hop-exhausted copy can never be
+    //    relayed again, so it goes at once. Age is the long-stop for a copy that
+    //    still has hops but no way to spend them — the fate of everything stuck
+    //    behind a busy radio.
+    if (L.t % 20 === 0) {
+      for (let i = 0; i < n; i++) for (const [id, ttl] of [...L.hold[i]]) {
+        if (ttl <= 0 && L.dstOf.get(id) !== i) { L.hold[i].delete(id); continue; }
+        if (L.t - (L.bornOf.get(id) ?? L.t) > MAX_AGE) L.hold[i].delete(id);
+      }
+      for (const [id, born] of [...L.bornOf]) {
+        if (L.t - born <= MAX_AGE) continue;
+        if (L.dstOf.has(id)) {
+          L.agedOut++;
+          L.dstOf.delete(id);
+          if (L.track && id === L.track.id && !L.track.done) {
+            L.track.done = true;
+            L.track.expired = true;      // its trail clears with it
+            recordSend(L.track, "expired");
+          }
+        }
+        L.bornOf.delete(id);
+      }
+    }
+
+    // 5. rotation — gated on the policy, exactly as policyEnabled gates it
+    if (L.rule === "f3") rotate();
+
+    for (const [k, f] of [...L.flash]) if (f.until < L.t) L.flash.delete(k);
+  }
+
+  /** Evict one link that has been quiet both ways, then fill the slot with the
+   *  least-recently-linked candidate in range (novelty-first admission). */
+  function rotate() {
+    const L = live, n = G.nodes.length;
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      if (L.t - L.lastRotation[i] < IDLE_WINDOW) continue;
+      let victim = -1, quietest = Infinity;
+      for (const j of G.adj[i]) {
+        const key = lk(i, j);
+        if (L.t - (L.formedAt.get(key) ?? 0) < IDLE_WINDOW) continue;   // grace
+        const q = L.lastTraffic.get(key) ?? 0;
+        if (L.t - q >= IDLE_WINDOW && q < quietest) { quietest = q; victim = j; }
+      }
+      if (victim < 0) continue;
+      G.adj[i] = G.adj[i].filter(x => x !== victim);
+      G.adj[victim] = G.adj[victim].filter(x => x !== i);
+      L.lastLinked.set(lk(i, victim), L.t);
+      L.lastRotation[i] = L.t;
+      L.rotations++;
+      L.flash.set(lk(i, victim), { until: L.t + 6, kind: "drop" });
+
+      let best = -1, oldest = Infinity;
+      for (const c of G.inRange[i]) {
+        if (c === victim || G.adj[i].includes(c) || G.adj[c].length >= MAX_LINKS) continue;
+        const seenAt = L.lastLinked.get(lk(i, c)) ?? -1;   // never linked sorts first
+        if (seenAt < oldest) { oldest = seenAt; best = c; }
+      }
+      if (best >= 0) {
+        G.adj[i].push(best); G.adj[best].push(i);
+        L.formedAt.set(lk(i, best), L.t);
+        L.lastTraffic.set(lk(i, best), L.t);
+        L.flash.set(lk(i, best), { until: L.t + 6, kind: "form" });
+      }
+      moved = true;
+    }
+    if (moved) bumpGraph();   // the link set changed; cached distances are stale
+  }
+
+  const custodyTotal = () => live.hold.reduce((a, m) => a + m.size, 0);
+
+  /**
+   * The links node i will offer packet `id` on, decided once when it takes the
+   * packet and remembered. Re-deciding every tick would make F a rate limit
+   * rather than a fan-out cap: peers leave the "hasn't seen it" set as they
+   * receive it, so the next-best peer would keep taking the freed slot until
+   * every neighbour had a copy.
+   */
+  function lanesFor(i, id) {
+    const key = i + ":" + id;
+    let lanes = live.lanes.get(key);
+    if (!lanes) {
+      const dst = live.dstOf.get(id);
+      lanes = dst === undefined ? []
+        : ruleTargets(i, dst, live.rule, p => !live.seen[p].has(id));
+      live.lanes.set(key, lanes);
+    }
+    return lanes;
+  }
+
+  /** What distinguishes one curve from another: the rule plus its parameters. */
+  function configLabel() {
+    const a = algoOf(current);
+    return current === "f3"
+      ? `${a.short} F=${SK.F} α=${SK.alpha} β=${SK.beta}`
+      : a.short;
+  }
+
+  let sends = [];   // one record per completed send, cleared when the field changes
+
+  function recordSend(T, outcome) {
+    sends.push({
+      pair: T.pair, rule: T.rule, cfg: T.cfg, outcome,
+      hops: T.hops, ticks: live.t - T.born, tx: T.tx,
+      copies: T.ticks ? T.copiesSum / T.ticks : 0,
+    });
+    renderSends();
+  }
+
+  /** Inject the message whose endpoints we picked, and follow it. */
+  function sendTracked() {
+    if (!live || G.src === G.dst) return;
+    const L = live, id = L.nextId++;
+    L.dstOf.set(id, G.dst);
+    L.bornOf.set(id, L.t);
+    L.hold[G.src].set(id, TTL);
+    L.seen[G.src].add(id);
+    L.created++;
+    L.track = { id, tx: 0, hops: null, born: L.t, done: false,
+                copiesSum: 0, ticks: 0, cfg: configLabel(), rule: current,
+                pair: G.src + "->" + G.dst };
+    L.trackFloodTx = runHeadless(G.src, G.dst, "flood").tx;
+  }
+
+  // ---------------------------------------------------------------- rendering
+  const cv = document.getElementById("field");
+  const ctx = cv.getContext("2d");
+  let W = 1200, H = 760, DPR = 1;
+
+  function resize() {
+    const box = cv.parentElement.getBoundingClientRect();
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.max(360, box.width);
+    H = Math.round(W * 0.63);
+    cv.width = W * DPR; cv.height = H * DPR;
+    cv.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  function project(p) {
+    const pad = 26;
+    const k = Math.min((W - pad * 2) / WORLD, (H - pad * 2) / WORLD);
+    return { x: (W - WORLD * k) / 2 + p.x * k, y: (H - WORLD * k) / 2 + p.y * k, k };
+  }
+
+  const TRANSFER_MS = 620;
+
+  function draw(now) {
+    const g = G, s = sim;
+    ctx.clearRect(0, 0, W, H);
+    const accent = colorOf(current);
+    const inkSoft = css("--hairline");
+
+    // cluster cells
+    ctx.strokeStyle = inkSoft; ctx.lineWidth = 1;
+    for (let i = 0; i <= GRID; i++) {
+      const p = project({ x: i * CELL, y: 0 }), q = project({ x: i * CELL, y: WORLD });
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+      const r = project({ x: 0, y: i * CELL }), t = project({ x: WORLD, y: i * CELL });
+      ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    }
+
+    // the recipient's cluster, for the rules that route to it
+    const hier = current.startsWith("h");
+    if (hier) {
+      const dc = g.nodes[G.dst].cluster;
+      const c0 = project({ x: (dc % GRID) * CELL, y: ((dc / GRID) | 0) * CELL });
+      const c1 = project({ x: (dc % GRID + 1) * CELL, y: (((dc / GRID) | 0) + 1) * CELL });
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.08;
+      ctx.fillRect(c0.x, c0.y, c1.x - c0.x, c1.y - c0.y);
+      ctx.globalAlpha = 1;
+    }
+
+    // links — the ones leaving a cluster are what make a member a boundary node
+    for (const inter of [false, true]) {
+      ctx.strokeStyle = inter ? css("--ink-3") : css("--link");
+      ctx.globalAlpha = inter ? 0.5 : 1;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < g.nodes.length; i++) {
+        const a = project(g.nodes[i]);
+        for (const j of g.adj[i]) {
+          if (j < i) continue;
+          if ((g.nodes[i].cluster !== g.nodes[j].cluster) !== inter) continue;
+          const b = project(g.nodes[j]);
+          ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        }
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // every cluster's entry point(s) under the selected rule
+    if (hier) {
+      const one = current !== "hmulti";
+      for (let c = 0; c < GRID * GRID; c++) {
+        for (const i of entrySet(c, current)) {
+          const p = project(g.nodes[i]);
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = one ? 1.8 : 1.1;
+          ctx.beginPath(); ctx.arc(p.x, p.y, one ? 8 : 6, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
+    }
+
+    // links that just formed or dropped
+    if (live) {
+      for (const [key, f] of live.flash) {
+        const [a, b] = key.split(":").map(Number);
+        const u = project(g.nodes[a]), v = project(g.nodes[b]);
+        const life = Math.max(0, (f.until - live.t) / 6);
+        ctx.strokeStyle = css("--ink");
+        ctx.globalAlpha = 0.25 + 0.5 * life;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(f.kind === "drop" ? [3, 3] : []);   // a dropped link is gone
+        ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(v.x, v.y); ctx.stroke();
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+
+    // nodes
+    for (let i = 0; i < g.nodes.length; i++) {
+      const p = project(g.nodes[i]);
+      if (live) {
+        const held = live.hold[i].size;
+        const ours = live.track && !live.track.expired
+          && live.seen[i].has(live.track.id);
+        let r = 3.1 + Math.min(3.4, held * 0.3);
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = ours ? accent : css("--node");
+        ctx.globalAlpha = ours ? 1 : (held ? 0.55 : 0.85);
+        ctx.fill(); ctx.globalAlpha = 1;
+        if (i === G.src) {
+          ctx.fillStyle = css("--ink");
+          ctx.beginPath(); ctx.arc(p.x, p.y, 5.4, 0, Math.PI * 2); ctx.fill();
+        } else if (i === G.dst) {
+          ctx.fillStyle = css("--s-oracle");
+          ctx.beginPath(); ctx.arc(p.x, p.y, 5.4, 0, Math.PI * 2); ctx.fill();
+          if (live.track && live.track.hops !== null) {
+            ctx.strokeStyle = css("--s-oracle"); ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, Math.PI * 2); ctx.stroke();
+          }
+        }
+        continue;
+      }
+      const holding = s && s.seen[i];
+      const spent = holding && s.ttl[i] <= 0;
+      let r = 3.1, fill = css("--node");
+      if (holding) { fill = accent; r = 3.8; }
+      if (i === g.src) { fill = css("--ink"); r = 5.4; }
+      if (i === g.dst) { fill = css("--s-oracle"); r = 5.4; }
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      if (spent && i !== g.src && i !== g.dst) {
+        ctx.strokeStyle = accent; ctx.lineWidth = 1.4; ctx.stroke();
+      } else { ctx.fillStyle = fill; ctx.fill(); }
+    }
+
+    // recipient halo once it has the message
+    if (s && s.seen[g.dst]) {
+      const p = project(g.nodes[g.dst]);
+      ctx.strokeStyle = css("--s-oracle"); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // in-flight copies
+    const inflight = live ? live.transfers : (s ? s.transfers : null);
+    if (live) {
+      for (const tr of live.transfers) {
+        const u = Math.min(1, (now - tr.born) / tr.ms);
+        const a = project(g.nodes[tr.from]), b = project(g.nodes[tr.to]);
+        const x = a.x + (b.x - a.x) * u, y = a.y + (b.y - a.y) * u;
+        const ours = live.track && tr.id === live.track.id;
+        if (ours) {
+          ctx.strokeStyle = accent; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(x, y); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = ours ? accent : css("--node");
+        ctx.globalAlpha = ours ? 1 : 0.5;
+        ctx.beginPath(); ctx.arc(x, y, ours ? 3.2 : 2, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    } else if (s) {
+      for (const tr of s.transfers) {
+        const u = Math.min(1, (now - tr.born) / TRANSFER_MS);
+        const a = project(g.nodes[tr.from]), b = project(g.nodes[tr.to]);
+        const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        const x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e;
+        ctx.strokeStyle = accent; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(x, y); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = accent;
+        ctx.beginPath(); ctx.arc(x, y, 2.9, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+
+  let lastStep = 0, lastTick = 0;
+  function frame(now) {
+    if (live) {
+      if (now - lastTick >= TICK_MS) { liveStep(); lastTick = now; }
+      paintLive();
+    } else if (false && sim) {
+      // land arrivals
+      const still = [];
+      for (const tr of sim.transfers) {
+        if (now - tr.born >= TRANSFER_MS) land(tr); else still.push(tr);
+      }
+      sim.transfers = still;
+      if (now - lastStep > TRANSFER_MS * 0.72) {
+        if (sim.pending.length) { stepSim(); lastStep = now; }
+        else if (!sim.transfers.length) sim.done = true;
+      }
+      paintReadout();
+    }
+    draw(now);
+    requestAnimationFrame(frame);
+  }
+
+  function paintLive() {
+    const L = live, T = L.track;
+    paintInspect();
+    document.getElementById("m-hold").textContent = custodyTotal();
+    const age = T ? L.t - T.born : 0;
+    document.getElementById("m-hops").innerHTML = !T ? "—"
+      : T.hops !== null ? T.hops + ' <span class="unit">hops · ' + T.at + ' ticks</span>'
+      : '<span class="unit">in flight · ' + age + ' ticks</span>';
+    document.getElementById("m-tx").textContent = T ? T.tx : "—";
+    document.getElementById("m-ratio").innerHTML = !T || !T.tx ? "—"
+      : current === "flood" ? '<span class="unit">is the flood</span>'
+      : (T.tx / Math.max(1, L.trackFloodTx)).toFixed(2) + ' <span class="unit">× flood</span>';
+
+    const st = document.getElementById("status");
+    st.style.setProperty("--c", colorOf(current));
+    if (L.rule === "hmulti" && G.boundaryShare > 0.9) {
+      st.style.setProperty("--c", colorOf(current));
+      st.innerHTML = `${L.track && L.track.hops !== null
+          ? `Our message arrived in <b>${L.track.hops} hops</b> after ${L.track.at} ticks.`
+          : L.track ? `Our message is in flight.` : `Click two nodes, then <b>Send message</b>.`}
+        Note that <b>${Math.round(G.boundaryShare * 100)}% of every cluster's members hold a link out of
+        it</b> at this density — cells are 50 m and the radio reaches 50 m — so "any boundary member"
+        admits nearly everyone. What this rule restricts is the <em>direction</em>, not who lets a message
+        in. <b>Mechanism only:</b> read rates from the charts below.`;
+      return;
+    }
+    const rot = L.rule === "f3"
+      ? `Idle links rotate under this rule (${L.rotations} so far), so a copy with no lane left is carried
+         until a redraw gives it one.`
+      : `This rule runs with <b>the policy off</b>, so its link set is frozen, as in the measured runs.`;
+    let head;
+    if (!T) {
+      const slow = current === "flood" || current === "f3";
+      head = `Click a node for the sender, another for the recipient, then <b>Send message</b>.`
+        + (slow ? ` Under this rule the mesh is congested, so expect the message to take tens of
+           seconds — that delay is the result, not a stall. Compare against shortest path or cluster
+           addressing, which arrive in a few seconds.` : "");
+    } else if (T.hops !== null) {
+      head = `Our message arrived in <b>${T.hops} hops</b> after ${T.at} ticks, on ${T.tx} transmissions.`;
+    } else if (!L.dstOf.has(T.id)) {
+      head = `Our message <b>expired</b> after ${MAX_AGE} ticks without arriving — every copy sat in
+        custody with no link that would carry it onward. This is the age bound, the long-stop the app
+        sets at 6 h.`;
+    } else {
+      const copies = L.hold.reduce((a, m) => a + (m.has(T.id) ? 1 : 0), 0)
+                   + L.transfers.filter(t => t.id === T.id).length;
+      head = `Our message is in flight: <b>${copies} ${copies === 1 ? "copy" : "copies"}</b> of it are on
+        the mesh, ${T.tx} transmissions so far, ${age} ticks elapsed.`
+        + (age > 60 ? ` It is queued behind other traffic — this wait is what the measured median
+           latency reports.` : "");
+    }
+    st.innerHTML = `${head} ${rot} <b>Mechanism only:</b> this field offers a far heavier load per node
+      against a 60-packet custody cap, so backlog appears sooner than in the measured runs. Read rates
+      from the charts below, never from here.`;
+  }
+
+  // ---------------------------------------------------------------- control plane
+  const COMMON = [
+    { h: "Advertise", p: "A service UUID derived from the public key. A discovery hint, not a proof.", wire: "SERVICE UUID = SHA-256(pubkey)[0..8]" },
+    { h: "ANNOUNCE", p: "A self-signed presence broadcast, verified hop-locally. It is never relayed.", wire: "pubkey · nickname · Ed25519 signature" },
+    { h: "Noise handshake", p: "Both sides derive a session. The Ed25519 identity travels inside the encrypted payload.", wire: "msg1 → msg2 → session" },
+    { h: "Sync on connect", p: "The only conveyance path: offer the ids we hold, the peer requests what its seen-set lacks, we convey exactly that. Sealed to the session.", wire: "offer ids → request → convey" },
+  ];
+  const EXTRA = {
+    flood: [],
+    f3: [{ h: "Advertise suitability", p: "Each ANNOUNCE carries the sender's centrality and buffer occupancy, refreshed once per announce epoch. Every decision runs on values as stale as that interval.", wire: "ANNOUNCE += C_k · ρ_k" }],
+    hmulti: [
+      { h: "State the cluster", p: "Each peer adds its cluster id and whether it holds an external link. Both are facts a node states about itself, so nothing is agreed with anyone.", wire: "ANNOUNCE += cluster id · boundary flag" },
+      { h: "Learn the distance to each cluster", p: "Direction is not geography: a node forwards to a peer whose hop distance to the destination cluster's entry point is smaller than its own. That gradient is a distance-vector — advertise your best hop count per cluster, take min+1 from neighbors — so it costs one counter per cluster, not one per node. The oracle grants it free and never stale; a real one lags by the gossip period.", wire: "ANNOUNCE += hops to each cluster" },
+      { h: "Address the recipient's cluster", p: "The sender must know which cluster the recipient is in. Nothing in the envelope carries it — the outer header holds only the recipient id — so this needs a directory, and a recipient-to-cluster directory is the location index the sender-anonymity model exists to avoid. This is the unpriced step.", wire: "recipient → cluster · NOT SOLVED" },
+    ],
+    hgateway: [
+      { h: "State the cluster", p: "The same self-stated cluster id.", wire: "ANNOUNCE += cluster id" },
+{ h: "Learn the distance to each cluster", p: "Direction is not geography: a node forwards to a peer whose hop distance to the destination cluster's entry point is smaller than its own. That gradient is a distance-vector — advertise your best hop count per cluster, take min+1 from neighbors — so it costs one counter per cluster, not one per node. The oracle grants it free and never stale; a real one lags by the gossip period.", wire: "ANNOUNCE += hops to each cluster" },
+      { h: "Elect a leader", p: "The cluster must now agree which member accepts inbound traffic: candidacy, tie-break, failure detection, and re-election when it leaves. This is the only step that requires agreement.", wire: "candidacy ⇄ agreement ⇄ failure detection" },
+      { h: "Address the recipient's cluster", p: "The sender must know which cluster the recipient is in. Nothing in the envelope carries it — the outer header holds only the recipient id — so this needs a directory, and a recipient-to-cluster directory is the location index the sender-anonymity model exists to avoid. This is the unpriced step.", wire: "recipient → cluster · NOT SOLVED" },
+    ],
+    hcentral: [
+      { h: "State the cluster", p: "The same self-stated cluster id.", wire: "ANNOUNCE += cluster id" },
+{ h: "Learn the distance to each cluster", p: "Direction is not geography: a node forwards to a peer whose hop distance to the destination cluster's entry point is smaller than its own. That gradient is a distance-vector — advertise your best hop count per cluster, take min+1 from neighbors — so it costs one counter per cluster, not one per node. The oracle grants it free and never stale; a real one lags by the gossip period.", wire: "ANNOUNCE += hops to each cluster" },
+      { h: "Elect a leader", p: "The same election, ranked on internal centrality rather than external links.", wire: "candidacy ⇄ agreement ⇄ failure detection" },
+      { h: "Address the recipient's cluster", p: "The sender must know which cluster the recipient is in. Nothing in the envelope carries it — the outer header holds only the recipient id — so this needs a directory, and a recipient-to-cluster directory is the location index the sender-anonymity model exists to avoid. This is the unpriced step.", wire: "recipient → cluster · NOT SOLVED" },
+    ],
+    oracle: [{ h: "Know the whole graph", p: "Every node would need the live link graph of the mesh, correct at the instant it forwards. There is no protocol for this; it is a bound, not a design.", wire: "∅ — not implementable" }],
+  };
+  const LEDGER = {
+    flood: { cost: [["Extra bytes per ANNOUNCE", "0"], ["Extra round trips", "0"], ["State agreed with others", "none"]],
+      verdict: "Nothing to learn and nothing to maintain. It pays on every message instead, and stops working past 320 nodes." },
+    f3: { cost: [["Extra bytes per ANNOUNCE", "2 fields"], ["Extra round trips", "0"], ["State agreed with others", "none"]],
+      verdict: "Self-stated and cheap, but it loses delivery at every density until the flood itself is failing." },
+    hmulti: { cost: [["Extra bytes per ANNOUNCE", "cluster id + 1 counter per cluster"], ["Extra round trips", "0"], ["State agreed with others", "none — the gradient converges by gossip"], ["Still unpriced", "recipient → cluster"]],
+      verdict: "A hierarchy for two self-stated fields. It holds 0.973 delivery where the flood reaches 0.389." },
+    hgateway: { cost: [["Extra bytes per ANNOUNCE", "cluster id + 1 counter per cluster"], ["Extra round trips", "election"], ["State agreed with others", "who leads"], ["Still unpriced", "recipient → cluster"]],
+      verdict: "Agreement is the expensive part, and it buys a bottleneck: a cluster's inbound traffic crosses one node's seven links." },
+    hcentral: { cost: [["Extra bytes per ANNOUNCE", "cluster id + 1 counter per cluster"], ["Extra round trips", "election"], ["State agreed with others", "who leads"], ["Still unpriced", "recipient → cluster"]],
+      verdict: "The same agreement cost and the same bottleneck. Delivery falls from 0.686 to 0.488 as density rises." },
+    oracle: { cost: [["Extra bytes per ANNOUNCE", "—"], ["Extra round trips", "—"], ["State agreed with others", "the entire graph"]],
+      verdict: "Not implementable. Its value is as a bound on what any directory, election or gossiped index could achieve." },
+  };
+
+  function renderControlPlane() {
+    const a = algoOf(current);
+    const steps = document.getElementById("steps");
+    const extras = EXTRA[current];
+    steps.innerHTML = "";
+    const all = [...COMMON.map(s => ({ ...s, extra: false })), ...extras.map(s => ({ ...s, extra: true }))];
+    all.forEach((s, i) => {
+      const el = document.createElement("div");
+      el.className = "step" + (s.extra ? " extra" : "");
+      el.style.setProperty("--c", colorOf(current));
+      el.innerHTML = `<div class="step-n">${String(i + 1).padStart(2, "0")}</div>
+        <div><h3>${s.h}</h3><p>${s.p}</p><div class="wire">${s.wire}</div></div>`;
+      steps.appendChild(el);
+    });
+    document.getElementById("cp-algo").textContent = a.name;
+    // reveal in sequence
+    const rows = [...steps.children];
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rows.forEach((r, i) => setTimeout(() => r.classList.add("on"), reduce ? 0 : 90 + i * 260));
+
+    const L = LEDGER[current];
+    const led = document.getElementById("ledger");
+    led.innerHTML = `<div class="cost">${L.cost.map(([k, v]) =>
+      `<div class="cost-row"><span>${k}</span><span>${v}</span></div>`).join("")}</div>
+      <div class="verdict" style="--c:${colorOf(current)}">${L.verdict}</div>`;
+  }
+
+  // ---------------------------------------------------------------- measured
+  const MEASURED = [
+    ["oracle", [1.000, 0.997, 1.000, 0.996, 0.987], 10.0],
+    ["hmulti", [0.993, 0.987, 0.979, 0.970, 0.961], 16.8],
+    ["hgateway", [0.840, 0.723, 0.632, 0.546, 0.483], 21.7],
+    ["hcentral", [0.708, 0.620, 0.572, 0.525, 0.479], 18.8],
+    ["f3", [0.859, 0.323, 0.099, 0.028, 0.014], 288.8],
+    ["flood", [0.404, 0.263, 0.152, 0.086, 0.069], 371.2],
+  ];
+  const LABEL = Object.fromEntries(ALGOS.map(a => [a.id, a.short]));
+
+  function renderMeasured() {
+    document.getElementById("measured-body").innerHTML = MEASURED.map(([id, ds, rpd]) => {
+      const cells = ds.map((d, i) => {
+        const cliff = id === "flood" && i >= 3;
+        return `<td class="${cliff ? "cliff" : ""}">${d.toFixed(3)}</td>`;
+      }).join("");
+      return `<tr><td class="name"><i class="dot" style="background:var(${algoOf(id).color})"></i>${algoOf(id).name}</td>${cells}<td>${rpd.toFixed(1)}</td></tr>`;
+    }).join("");
+  }
+
+  // ------------------------------------------------------- sends on this pair
+  const SEND_METRICS = [
+    { key: "hops",   title: "Hops",          unit: "hops to arrive",              fmt: v => v.toFixed(0) },
+    { key: "ticks",  title: "Time",          unit: "ticks to arrive",             fmt: v => v.toFixed(0) },
+    { key: "tx",     title: "Transmissions", unit: "transfers spent on it",       fmt: v => v.toFixed(0) },
+    { key: "copies", title: "Copies held",   unit: "mean copies alive per tick",  fmt: v => v.toFixed(1) },
+  ];
+  const DASHES = ["", "4 3", "1 3", "6 2 2 2"];
+
+  function renderSends() {
+    const panel = document.getElementById("sends-panel");
+    const pair = G.src + "->" + G.dst;
+    const mine = sends.filter(r => r.pair === pair);
+    panel.hidden = mine.length === 0;
+    if (!mine.length) return;
+
+    // one series per rule+parameters, in the order they were first used
+    const series = new Map();
+    for (const r of mine) {
+      if (!series.has(r.cfg)) {
+        const sameRule = [...series.values()].filter(v => v.rule === r.rule).length;
+        series.set(r.cfg, { cfg: r.cfg, rule: r.rule, dash: DASHES[sameRule % DASHES.length], rows: [] });
+      }
+      series.get(r.cfg).rows.push(r);
+    }
+    const all = [...series.values()];
+    const most = Math.max(...all.map(s => s.rows.length));
+    document.getElementById("sends-hd").textContent =
+      `node ${G.src} → ${G.dst} · ${mine.length} send${mine.length === 1 ? "" : "s"} · ${all.length} configuration${all.length === 1 ? "" : "s"}`;
+
+    const host = document.getElementById("send-charts");
+    host.innerHTML = "";
+    const W = 320, H = 190, ML = 42, MR = 14, MT = 10, MB = 26;
+    for (const m of SEND_METRICS) {
+      const vals = mine.filter(r => r[m.key] !== null).map(r => r[m.key]);
+      const hi = Math.max(1, ...vals) * 1.15, lo = 0;
+      const px = i => most < 2 ? (ML + W - MR) / 2
+        : ML + i * (W - ML - MR) / (most - 1);
+      const py = v => H - MB - ((v - lo) / (hi - lo)) * (H - MB - MT);
+      const g = [];
+      for (let t = 0; t <= 4; t++) {
+        const v = lo + (hi - lo) * t / 4, y = py(v).toFixed(1);
+        g.push(`<line class="grid-line" x1="${ML}" x2="${W - MR}" y1="${y}" y2="${y}"/>`);
+        g.push(`<text class="ax" x="${ML - 6}" y="${(+y + 3).toFixed(1)}" text-anchor="end">${m.fmt(v)}</text>`);
+      }
+      for (let i = 0; i < most; i++) {
+        g.push(`<text class="ax" x="${px(i).toFixed(1)}" y="${H - MB + 14}" text-anchor="middle">${i + 1}</text>`);
+      }
+      for (const sv of all) {
+        const col = `var(${algoOf(sv.rule).color})`;
+        const pts = sv.rows.map((r, i) => ({ x: px(i), y: r[m.key] === null ? null : py(r[m.key]), r }));
+        const drawn = pts.filter(p => p.y !== null);
+        if (drawn.length > 1) {
+          g.push(`<path d="${drawn.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("")}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="${sv.dash}" stroke-linejoin="round"/>`);
+        }
+        for (const p of drawn) {
+          g.push(`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="${p.r.outcome === "expired" ? "var(--surface)" : col}" stroke="${col}" stroke-width="2"/>`);
+        }
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "chart";
+      wrap.innerHTML = `<h3>${m.title}</h3>
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.title} for each send on this pair, one line per rule and parameter set."> ${g.join("")}</svg>
+        <div class="unit-cap">${m.unit} · by send</div>`;
+      host.appendChild(wrap);
+    }
+
+    document.getElementById("send-keys").innerHTML = all.map(sv => {
+      const exp = sv.rows.filter(r => r.outcome === "expired").length;
+      return `<div class="key"><i class="dot" style="background:var(${algoOf(sv.rule).color})"></i>
+        <div><b>${sv.cfg}</b><span>${sv.rows.length} send${sv.rows.length === 1 ? "" : "s"}${exp ? `, ${exp} expired (hollow)` : ""}</span></div></div>`;
+    }).join("");
+  }
+
+  // ---------------------------------------------------------------- curves
+  const NODES = [160, 240, 320, 400, 480];
+  const CURVE_KEY = { flood: "base" };            // the sweep names the flood arm "base"
+  const curve = id => CURVES[CURVE_KEY[id] || id];
+  const CURVES = {"base":{"160":{"delivery":[0.4043,0.2315,0.6054],"latency":[327.0,31.0,686.0],"rpd":[116.3825,102.3929,126.0902]},"240":{"delivery":[0.2632,0.0974,0.3744],"latency":[126.5,8.0,407.0],"rpd":[185.6113,169.3584,203.7218]},"320":{"delivery":[0.1519,0.0739,0.2108],"latency":[36.5,6.0,128.0],"rpd":[251.469,220.4952,268.8879]},"400":{"delivery":[0.0861,0.0244,0.1757],"latency":[8.7,5.0,22.0],"rpd":[309.3293,278.8397,344.9131]},"480":{"delivery":[0.0687,0.0314,0.1211],"latency":[7.9,6.0,12.0],"rpd":[371.2182,337.3445,400.4634]}},"f3":{"160":{"delivery":[0.859,0.4884,0.9104],"latency":[13.9,11.0,16.0],"rpd":[47.5479,45.2889,63.3476]},"240":{"delivery":[0.3234,0.1166,0.7643],"latency":[10.1,7.0,15.0],"rpd":[110.0497,73.1466,141.3707]},"320":{"delivery":[0.0986,0.0303,0.1961],"latency":[7.3,5.0,10.0],"rpd":[192.5918,162.5797,211.6163]},"400":{"delivery":[0.0281,0.0102,0.0586],"latency":[5.5,3.0,7.0],"rpd":[249.3796,196.7836,285.356]},"480":{"delivery":[0.0142,0.0053,0.0273],"latency":[4.6,3.0,7.0],"rpd":[288.8092,260.9382,346.805]}},"hcentral":{"160":{"delivery":[0.7084,0.6296,0.7932],"latency":[4.8,4.0,5.0],"rpd":[10.6424,9.5603,11.8004]},"240":{"delivery":[0.6195,0.5095,0.7138],"latency":[5.0,4.0,5.0],"rpd":[13.1284,11.3912,15.4689]},"320":{"delivery":[0.5717,0.469,0.6476],"latency":[5.0,5.0,6.0],"rpd":[15.0636,13.3693,17.693]},"400":{"delivery":[0.5251,0.4367,0.6082],"latency":[5.4,5.0,6.0],"rpd":[16.8706,14.7884,19.995]},"480":{"delivery":[0.4787,0.4124,0.5686],"latency":[5.7,5.0,6.0],"rpd":[18.7819,16.863,20.5401]}},"hgateway":{"160":{"delivery":[0.8401,0.7907,0.9022],"latency":[5.0,5.0,5.0],"rpd":[10.3135,9.5611,10.9692]},"240":{"delivery":[0.7229,0.6026,0.8301],"latency":[5.6,5.0,6.0],"rpd":[13.1295,11.6482,15.4841]},"320":{"delivery":[0.6318,0.54,0.7255],"latency":[5.9,5.0,6.0],"rpd":[15.8911,13.7806,19.0032]},"400":{"delivery":[0.5462,0.4658,0.6373],"latency":[6.0,5.0,6.0],"rpd":[18.7673,16.2651,22.2955]},"480":{"delivery":[0.4826,0.3838,0.561],"latency":[6.0,5.0,6.0],"rpd":[21.6607,18.8726,27.2778]}},"hmulti":{"160":{"delivery":[0.9927,0.8705,0.9988],"latency":[4.0,4.0,5.0],"rpd":[10.709,10.1479,11.3011]},"240":{"delivery":[0.9875,0.9706,0.9939],"latency":[5.0,5.0,5.0],"rpd":[12.6783,11.9757,13.1639]},"320":{"delivery":[0.979,0.9637,0.9871],"latency":[5.0,5.0,5.0],"rpd":[14.2675,13.7211,15.0141]},"400":{"delivery":[0.9701,0.95,0.98],"latency":[5.0,5.0,5.0],"rpd":[15.6557,14.9958,16.3474]},"480":{"delivery":[0.961,0.9146,0.9744],"latency":[5.0,5.0,5.0],"rpd":[16.8216,15.8987,17.5651]}},"oracle":{"160":{"delivery":[0.9998,0.9996,0.9999],"latency":[4.0,4.0,4.0],"rpd":[8.1568,7.8052,8.5957]},"240":{"delivery":[0.9968,0.9366,0.9999],"latency":[4.0,4.0,4.0],"rpd":[8.8995,8.5295,9.2831]},"320":{"delivery":[0.9998,0.9996,0.9999],"latency":[4.0,4.0,4.0],"rpd":[9.4382,9.1962,9.7807]},"400":{"delivery":[0.9957,0.8028,0.9999],"latency":[4.0,4.0,4.0],"rpd":[9.7258,9.3939,10.031]},"480":{"delivery":[0.9869,0.4889,0.9999],"latency":[4.0,4.0,4.0],"rpd":[10.0054,9.7902,10.7938]}}};   // [mean, min, max] over the fifty paired runs
+
+  const CHARTS = [
+    { key: "delivery", title: "Delivery", unit: "fraction of messages delivered",
+      scale: "linear", domain: [0, 1], ticks: [0, 0.25, 0.5, 0.75, 1],
+      fmt: v => v.toFixed(3), tick: v => v.toFixed(2), hi: true,
+      note: "The flood fails at every density tested, worst where it is densest. Cluster addressing stays within 4 points of an omniscient router throughout." },
+    { key: "latency", title: "Median latency", unit: "seconds · log scale",
+      scale: "log", domain: [3, 800], ticks: [10, 100],
+      fmt: v => v < 10 ? v.toFixed(1) + " s" : Math.round(v) + " s", tick: v => v + " s", hi: false,
+      note: "Read against delivery: the flood's median falls as density rises only because the slow messages stop arriving at all." },
+    { key: "rpd", title: "Retransmissions", unit: "relays per delivered message · log scale",
+      scale: "log", domain: [6, 460], ticks: [10, 30, 100, 300],
+      fmt: v => v.toFixed(1), tick: v => String(v), hi: false,
+      note: "Directed forwarding is near-flat in node count. The flood rises with it, slightly faster than proportionally." },
+  ];
+
+  function renderCharts() {
+    const host = document.getElementById("charts");
+    host.innerHTML = "";
+    const W = 320, H = 200, ML = 42, MR = 14, MT = 10, MB = 28;
+    const px = i => ML + i * (W - ML - MR) / (NODES.length - 1);
+
+    for (const c of CHARTS) {
+      const lg = c.scale === "log";
+      const lo = lg ? Math.log10(c.domain[0]) : c.domain[0];
+      const hiD = lg ? Math.log10(c.domain[1]) : c.domain[1];
+      const py = v => {
+        const t = ((lg ? Math.log10(Math.max(v, c.domain[0])) : v) - lo) / (hiD - lo);
+        return H - MB - t * (H - MB - MT);
+      };
+
+      const g = [];
+      for (const t of c.ticks) {
+        const y = py(t).toFixed(1);
+        g.push(`<line class="grid-line" x1="${ML}" x2="${W - MR}" y1="${y}" y2="${y}"/>`);
+        g.push(`<text class="ax" x="${ML - 6}" y="${(py(t) + 3).toFixed(1)}" text-anchor="end">${c.tick(t)}</text>`);
+      }
+      NODES.forEach((n, i) => {
+        g.push(`<text class="ax" x="${px(i).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${n}</text>`);
+      });
+
+      for (const a of ALGOS) {
+        const col = `var(${a.color})`;
+        const pts = NODES.map((n, i) => {
+          const st = curve(a.id)[n][c.key];
+          return { x: px(i), y: py(st[0]), a: py(st[1]), b: py(st[2]) };
+        });
+        for (const p of pts) {
+          if (Math.abs(p.a - p.b) > 1.5) {
+            g.push(`<line x1="${p.x.toFixed(1)}" x2="${p.x.toFixed(1)}" y1="${p.a.toFixed(1)}" y2="${p.b.toFixed(1)}" stroke="${col}" stroke-width="1.5" opacity="0.35"/>`);
+          }
+        }
+        g.push(`<path d="${pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("")}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`);
+        for (const p of pts) {
+          g.push(`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="${col}" stroke="var(--surface)" stroke-width="2"/>`);
+        }
+        if (a.id === "flood" || a.id === "oracle") {
+          const L = pts[pts.length - 1];
+          const dy = (c.key === "delivery") === (a.id === "flood") ? 14 : -9;
+          g.push(`<text class="ax" x="${(L.x - 4).toFixed(1)}" y="${(L.y + dy).toFixed(1)}" text-anchor="end" fill="${col}" style="font-weight:600">${a.id === "flood" ? "flood" : "shortest path"}</text>`);
+        }
+      }
+
+      const wrap = document.createElement("div");
+      wrap.className = "chart";
+      wrap.innerHTML = `<h3>${c.title}</h3><p>${c.note}</p>
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} against node count, one line per forwarding rule; the table below lists the same values.">
+          ${g.join("")}
+          <line class="cross" x1="0" x2="0" y1="${MT}" y2="${H - MB}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 2" opacity="0"/>
+          <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+        </svg>
+        <div class="unit-cap">${c.unit}</div>
+        <div class="tip"></div>`;
+      host.appendChild(wrap);
+
+      const svg = wrap.querySelector("svg"), tip = wrap.querySelector(".tip"),
+            cross = wrap.querySelector(".cross");
+      svg.addEventListener("mousemove", ev => {
+        const r = svg.getBoundingClientRect();
+        const xv = (ev.clientX - r.left) / r.width * W;
+        let i = 0, best = Infinity;
+        NODES.forEach((n, k) => { const d = Math.abs(px(k) - xv); if (d < best) { best = d; i = k; } });
+        cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+        cross.setAttribute("opacity", "0.55");
+        const rows = ALGOS.map(a => ({ a, v: curve(a.id)[NODES[i]][c.key][0] }))
+          .sort((u, w) => c.hi ? w.v - u.v : u.v - w.v);
+        tip.innerHTML = `<div class="tip-hd">${NODES[i]} NODES</div>` + rows.map(r =>
+          `<div class="tip-row"><i class="dot" style="background:var(${r.a.color})"></i>${LABEL[r.a.id]}<b>${c.fmt(r.v)}</b></div>`).join("");
+        tip.style.opacity = "1";
+        tip.style.left = Math.min(Math.max(0, (px(i) / W) * r.width - 76), r.width - 152) + "px";
+        tip.style.top = (svg.offsetTop + 6) + "px";
+      });
+      svg.addEventListener("mouseleave", () => {
+        tip.style.opacity = "0"; cross.setAttribute("opacity", "0");
+      });
+    }
+
+    document.getElementById("keys").innerHTML = ALGOS.map(a =>
+      `<div class="key"><i class="dot" style="background:var(${a.color})"></i>
+        <div><b>${a.name}</b><span>${a.rule}</span></div></div>`).join("");
+  }
+
+  // ---------------------------------------------------------------- wiring
+  function renderAlgoList(host) {
+    host.innerHTML = "";
+    for (const a of ALGOS) {
+      const b = document.createElement("button");
+      b.className = "algo";
+      b.style.setProperty("--c", `var(${a.color})`);
+      b.setAttribute("aria-pressed", String(a.id === current));
+      b.innerHTML = `<i class="swatch"></i>
+        <span><span class="algo-name">${a.name}<span class="tag">${a.tag}</span></span>
+        <span class="algo-rule">${a.rule}</span>
+        <span class="algo-arm">arm <code>${a.arm}</code> in run-sko.sh</span></span>`;
+      b.addEventListener("click", () => select(a.id));
+      host.appendChild(b);
+    }
+  }
+
+  function select(id) {
+    current = id;
+    for (const host of [document.getElementById("algos"), document.getElementById("algos2")]) {
+      [...host.children].forEach((b, i) => b.setAttribute("aria-pressed", String(ALGOS[i].id === id)));
+    }
+    document.getElementById("lg-hold").style.background = colorOf(id);
+    const ENTRY_LABEL = {
+      hcentral: "cluster coordinator — the one way in",
+      hgateway: "cluster gateway — the one way in",
+      hmulti:   "boundary members — any of them is a way in",
+    };
+    const entryLegend = document.getElementById("lg-entry");
+    const interLegend = document.getElementById("lg-inter");
+    entryLegend.hidden = interLegend.hidden = !ENTRY_LABEL[id];
+    for (const el of ["lg-form", "lg-drop"]) {
+      const node = document.getElementById(el);
+      node.hidden = id !== "f3";          // only the policy arm rotates links
+      node.style.setProperty("--c", css("--ink"));
+    }
+    if (ENTRY_LABEL[id]) {
+      entryLegend.style.setProperty("--c", colorOf(id));
+      document.getElementById("lg-entry-text").textContent = ENTRY_LABEL[id];
+    }
+    restart(false);      // same field, same pair: keep what we have measured
+    paintSk();
+    renderControlPlane();
+  }
+
+  function rebuild() {
+    const want = +document.getElementById("nodes").value;   // per cell
+    const cells = GRID * GRID;
+    const n = Math.max(1, Math.min(want, Math.floor(MAX_NODES / cells)));
+    document.getElementById("nodes-out").textContent =
+      `${n} · ${n * cells} total` + (n < want ? " (capped)" : "");
+    const seed = +document.getElementById("seed").value;
+    G = buildTopology(n, seed, pairSalt);
+    bumpGraph();
+    // how much of a restriction "boundary member" actually is, in this geometry
+    let members = 0, boundary = 0;
+    for (let i = 0; i < G.nodes.length; i++) {
+      members++;
+      if (G.adj[i].some(j => G.nodes[j].cluster !== G.nodes[i].cluster)) boundary++;
+    }
+    G.boundaryShare = boundary / Math.max(1, members);
+    document.getElementById("topo-readout").textContent =
+      `${G.nodes.length} nodes in ${WORLD} m · hears ${G.meanRange.toFixed(1)} · links ${G.meanLink.toFixed(1)}`
+      + ` · ${Math.round(G.boundaryShare * 100)}% on a cluster boundary`;
+    startSim();
+  }
+
+  /** Keep the score controls honest about what they affect and when they drift
+   *  from the parameters the measured curves were run at. */
+  function paintSk() {
+    const drift = SK.alpha !== MEASURED_SK.alpha || SK.beta !== MEASURED_SK.beta
+               || SK.F !== MEASURED_SK.F;
+    const applies = current === "f3";
+    document.getElementById("sk-group").classList.toggle("off", !applies);
+    document.getElementById("sk-scope").textContent = applies
+      ? "— ranks this rule's lanes" : "— only top-3 reads these";
+    const inert = SK.beta > 0
+      ? ` &#946; only separates peers whose custody differs, so while buffers sit near empty it changes
+          no ranking at all.` : "";
+    document.getElementById("sk-note").innerHTML = (drift
+      ? `Field is running &#945; ${SK.alpha}, &#946; ${SK.beta}, F ${SK.F}. The measured curves below
+         are &#945; 0.5, &#946; 0, F 3 — they do not move with these sliders.`
+      : `&#952; stays 0 with the gate inclusive, so every peer passes and only the ranking decides.`)
+      + inert;
+  }
+
+  for (const [id, key, fmt] of [["p-alpha","alpha",v=>v.toFixed(2)],
+                                ["p-beta","beta",v=>v.toFixed(2)],
+                                ["p-fanout","F",v=>String(v)]]) {
+    document.getElementById(id).addEventListener("input", e => {
+      SK[key] = +e.target.value;
+      document.getElementById(id + "-out").textContent = fmt(+e.target.value);
+      bumpGraph();          // lane sets are derived; drop anything cached
+      if (live) live.lanes.clear();
+      paintSk();
+    });
+  }
+
+  document.getElementById("p-tick").addEventListener("input", e => {
+    // Only new transfers pick up the new tick length; ones already in flight
+    // keep the duration they were started with, so nothing jumps.
+    TICK_MS = +e.target.value;
+    document.getElementById("p-tick-out").textContent = TICK_MS + " ms";
+  });
+
+  // One control: a cluster's side and the radio range are the same length.
+  const applyGeometry = () => {
+    GRID = WORLD / CELL;
+    document.getElementById("p-cell-out").textContent = `${CELL} m · ${GRID}×${GRID}`;
+    document.getElementById("p-world-out").textContent = `${WORLD} m`;
+    restart();
+  };
+  document.getElementById("p-cell").addEventListener("input", e => {
+    CELL = CELLS[+e.target.value]; RANGE = CELL; applyGeometry();
+  });
+  document.getElementById("p-world").addEventListener("input", e => {
+    WORLD = WORLDS[+e.target.value]; applyGeometry();
+  });
+  document.getElementById("p-age").addEventListener("input", e => {
+    // Applies to the running mesh: the next sweep uses the new bound, so a
+    // shorter one reaps the backlog that is already stuck.
+    MAX_AGE = +e.target.value;
+    document.getElementById("p-age-out").textContent = MAX_AGE + " ticks";
+  });
+  document.getElementById("p-links").addEventListener("input", e => {
+    MAX_LINKS = +e.target.value;
+    document.getElementById("p-links-out").textContent = MAX_LINKS + " per node";
+    restart();
+  });
+
+  /** Restart the mesh. Changing the FIELD invalidates the comparison and clears
+   *  it; changing the RULE is the comparison, so those samples are kept. */
+  const restart = (clear = true) => {
+    if (clear) sends = [];
+    rebuild(); startLive(); renderSends();
+  };
+  document.getElementById("nodes").addEventListener("input", () => restart());
+  document.getElementById("seed").addEventListener("input", e => {
+    document.getElementById("seed-out").textContent = e.target.value; restart();
+  });
+  /** Nearest node to a canvas point, if the click was close enough. */
+  function nodeAt(ev) {
+    const r = cv.getBoundingClientRect();
+    const x = (ev.clientX - r.left) * (W / r.width), y = (ev.clientY - r.top) * (W / r.width);
+    let best = -1, bestD = 14 * 14;
+    for (let i = 0; i < G.nodes.length; i++) {
+      const p = project(G.nodes[i]);
+      const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+  let picking = "src", inspect = null;
+  cv.addEventListener("click", ev => {
+    const i = nodeAt(ev);
+    if (i < 0) return;
+    inspect = i;
+    if (picking === "src") { G.src = i; picking = "dst"; }
+    else if (i !== G.src) { G.dst = i; picking = "src"; }
+    if (live) live.track = null;
+  });
+
+  /** What the clicked node can hear, what it is connected to, and what it holds. */
+  function paintInspect() {
+    const el = document.getElementById("inspect");
+    if (inspect === null || !G.nodes[inspect]) { el.hidden = true; return; }
+    el.hidden = false;
+    const i = inspect;
+    const inRange = G.inRange[i].length, linked = G.adj[i].length;
+    const role = i === G.src ? "sender" : i === G.dst ? "recipient" : "relay";
+    const held = live ? live.hold[i].size : 0;
+    const lanes = live ? ruleTargets(i, G.dst, current).length : 0;
+    const entry = current.startsWith("h")
+      && entrySet(G.nodes[i].cluster, current).has(i) ? " · cluster entry point" : "";
+    el.innerHTML = `<b>Node ${i}</b> · ${role} · cluster ${G.nodes[i].cluster}${entry} —
+      hears <b>${inRange}</b> peers, connected to <b>${linked}</b> of them
+      (cap ${MAX_LINKS}), forwards on ${lanes} of those for the current recipient,
+      holds ${held} ${held === 1 ? "packet" : "packets"}.`;
+  }
+
+  document.getElementById("send").addEventListener("click", sendTracked);
+  document.getElementById("replay").addEventListener("click", () => {
+    const n = G.nodes.length;
+    G.src = (Math.random() * n) | 0;
+    do { G.dst = (Math.random() * n) | 0; } while (G.dst === G.src);
+    picking = "src";
+    if (live) live.track = null;
+  });
+
+  const tabs = { data: document.getElementById("tab-data"), ctrl: document.getElementById("tab-ctrl") };
+  const views = { data: document.getElementById("view-data"), ctrl: document.getElementById("view-ctrl") };
+  function showTab(which) {
+    for (const k of ["data", "ctrl"]) {
+      tabs[k].setAttribute("aria-selected", String(k === which));
+      views[k].hidden = k !== which;
+    }
+    if (which === "ctrl") renderControlPlane(); else resize();
+  }
+  tabs.data.addEventListener("click", () => showTab("data"));
+  tabs.ctrl.addEventListener("click", () => showTab("ctrl"));
+
+  window.addEventListener("resize", resize);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => select(current));
+
+  renderAlgoList(document.getElementById("algos"));
+  renderAlgoList(document.getElementById("algos2"));
+  renderMeasured();
+  renderCharts();
+  resize();
+  rebuild();
+  startLive();
+  select("hmulti");   // opens on a rule that demonstrates in seconds
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

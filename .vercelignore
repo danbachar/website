@@ -1,0 +1,18 @@
+# Not part of the served site. Only index.html, cv.pdf, fonts/, assets/ and sim/ go up.
+.gitignore
+.vercel
+.git
+
+# The simulator's Go source, build files and reference harness. sim/ (the built page assets) stays.
+engine
+bridge
+cmd
+reference
+Makefile
+go.mod
+README.md
+
+# Source portraits kept in the repo; only assets/portrait-256.webp is used by the page.
+assets/portrait.png
+assets/portrait-trimmed.png
+assets/portrait-256.png

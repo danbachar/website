@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dan Bachar — Distributed systems engineer</title>
+<meta name="description" content="Dan Bachar. Software engineer, 10+ years across distributed systems, backend and full-stack. M.Sc. thesis on peer-to-peer messaging, TU Munich and the Technion.">
+<meta name="author" content="Dan Bachar">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfbf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101310" media="(prefers-color-scheme: dark)">
+
+<link rel="canonical" href="https://dan.bachar.co/">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://dan.bachar.co/">
+<meta property="og:title" content="Dan Bachar — Distributed systems engineer">
+<meta property="og:description" content="Networked, backend and peer-to-peer systems, from protocol design to production.">
+<meta property="og:site_name" content="Dan Bachar">
+<meta property="og:locale" content="en_GB">
+<meta property="profile:first_name" content="Dan">
+<meta property="profile:last_name" content="Bachar">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dan Bachar — Distributed systems engineer">
+<meta name="twitter:description" content="Networked, backend and peer-to-peer systems, from protocol design to production.">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f361d'/%3E%3Ctext x='16' y='22.5' text-anchor='middle' font-family='system-ui,-apple-system,Segoe UI,sans-serif' font-size='17' font-weight='600' fill='%23e9efe7'%3EDB%3C/text%3E%3C/svg%3E">
+
+<!-- Self-hosted fonts (OFL), latin subset. display=optional: used only if they arrive in time for first paint, so there is never a layout shift from a font swap. -->
+<link rel="preload" href="fonts/ibm-plex-sans-v23-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ibm-plex-mono-v20-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+  @font-face {
+    font-family: "IBM Plex Sans"; font-style: normal; font-weight: 100 700; font-display: optional;
+    src: url(fonts/ibm-plex-sans-v23-latin.woff2) format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: optional;
+    src: url(fonts/ibm-plex-mono-v20-latin-400.woff2) format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
+  /*
+    Accent: RAL 140 20 20 (Dark Bavarian Green) = CIE LCh(20, 20, 140°) ≈ #1f361d.
+    Dark mode uses the same hue at higher lightness, LCh(72, 28, 140°) ≈ #94bb8f.
+  */
+  :root {
+    --bg: #fbfbf8;
+    --text: #1a1d19;
+    --muted: #5a6158;
+    --line: #dfe3db;
+    --accent: #1f361d;
+    --accent-ink: #f1f5ef;
+    --accent-soft: #e8eee5;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101310;
+      --text: #e3e7e1;
+      --muted: #9aa298;
+      --line: #273026;
+      --accent: #94bb8f;
+      --accent-ink: #101310;
+      --accent-soft: #1a2219;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 1.5rem; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 1rem/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p, ul, ol, dl, dd { margin: 0; }
+  ul, ol { padding: 0; list-style: none; }
+
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 0.2em; transition: color .15s, text-decoration-color .15s; }
+  a:hover { color: var(--accent); text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .skip { position: absolute; left: 1rem; top: -3rem; padding: .5rem .75rem; background: var(--accent); color: var(--accent-ink); }
+  .skip:focus { top: 1rem; }
+
+  .wrap { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  /* Header */
+  .site-header { padding-top: 1.5rem; }
+  .site-header nav ul { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .875rem; }
+  .site-header nav a { color: var(--muted); text-decoration: none; }
+  .site-header nav a:hover { color: var(--accent); }
+
+  /* Intro */
+  .intro { padding: 5rem 0 4rem; }
+  .portrait {
+    display: block; width: 7rem; height: 7rem; margin-bottom: 1.5rem; border-radius: 50%;
+    background: var(--accent-soft); object-fit: cover; object-position: top;
+  }
+  .intro h1 { font-size: clamp(2.25rem, 8vw, 3.25rem); line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+  .intro p { margin-top: 1rem; max-width: 34rem; font-size: 1.1875rem; line-height: 1.5; color: var(--muted); }
+  .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+  .btn {
+    display: inline-block; padding: .625rem 1.125rem; border: 1px solid var(--accent); border-radius: 6px;
+    font-weight: 500; font-size: .9375rem; line-height: 1.4; text-decoration: none;
+    transition: background-color .15s, color .15s;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: transparent; color: var(--accent); }
+  .btn-secondary { color: var(--accent); }
+  .btn-secondary:hover { background: var(--accent-soft); color: var(--accent); }
+
+  /* Sections */
+  section { padding: 3.5rem 0; border-top: 1px solid var(--line); }
+  h2 {
+    font: 400 .8125rem/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--accent); margin-bottom: 2rem;
+  }
+  h3 { font-size: 1rem; font-weight: 600; line-height: 1.4; }
+  .sub { margin: 2.75rem 0 1.25rem; font: 400 .8125rem/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .when { font: 400 .8125rem/1.6 var(--mono); color: var(--muted); white-space: nowrap; }
+  .where { color: var(--muted); }
+
+  /* Timeline (work, education) */
+  .timeline > li { display: grid; gap: .25rem; }
+  .timeline > li + li { margin-top: 2rem; }
+  .timeline .body > p:not(.where), .timeline .body > ul { margin-top: .5rem; }
+  .bullets > li { position: relative; padding-left: 1rem; }
+  .bullets > li + li { margin-top: .375rem; }
+  .bullets > li::before { content: ""; position: absolute; left: 0; top: .72em; width: .375rem; height: 1px; background: var(--muted); }
+  .compact > li + li { margin-top: 1rem; }
+  .skills > div { display: grid; gap: .375rem; }
+  .skills > div + div { margin-top: 1rem; }
+  .skills dt { font: 400 .75rem/1.6 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding-top: .2rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: .375rem; align-items: flex-start; align-content: flex-start; }
+  .skill {
+    display: inline-block; padding: .2rem .55rem; border: 1px solid transparent; border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: .8125rem; font-weight: 500; line-height: 1.4; transition: border-color .15s;
+  }
+  .skill:hover { border-color: var(--accent); }
+  .skill small { font-size: .8em; font-weight: 400; opacity: .75; }
+
+  /* Research */
+  .lead { margin-top: .75rem; font-size: 1.125rem; line-height: 1.6; }
+  .lead + p { margin-top: 1rem; }
+  .facts { margin-top: 2.5rem; }
+  .facts > div { display: grid; gap: .25rem; }
+  .facts > div + div { margin-top: 1.5rem; }
+  .facts dt { font-weight: 600; }
+
+  /* Simulator: breaks out of the prose column so it gets its wide layout on desktop. */
+  .sim { position: relative; left: 50%; width: min(78rem, 100vw - 2.5rem); transform: translateX(-50%); margin-top: 1.5rem; }
+  /* ---- Simulator. Everything below is scoped to #sim; it inherits the site's fonts and colour scheme. ---- */
+  #sim section { padding: 0; border-top: 0; }
+  #sim { position: relative; }
+  #sim .field-panel { grid-column: 1 / -1; }
+  #sim .field-panel .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); gap: 10px 24px; align-items: center; }
+  #sim .row.actions { padding: 10px 14px; gap: 8px; border-top: 1px solid var(--hairline-soft); }
+  #sim .row.actions .sim-btn { flex: 0 1 12rem; }
+  #sim .field-panel .notes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 10px 28px; padding-top: 4px; border-top: 1px solid var(--hairline-soft); }
+  #sim .field-panel .note { max-width: none; }
+  #sim .sk-pop {
+    position: absolute; z-index: 6; width: 300px; max-width: calc(100% - 16px);
+    padding: 14px 14px 12px; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .22); animation: sk-in .14s ease-out;
+  }
+  #sim .sk-pop .sk-group { border-top: 0; padding-top: 0; }
+  #sim .sk-close {
+    position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border: 0; border-radius: 2px;
+    background: transparent; color: var(--ink-3); font: 16px/1 var(--sans); cursor: pointer;
+  }
+  #sim .sk-close:hover { background: var(--surface-sunk); color: var(--ink); }
+  @keyframes sk-in { from { opacity: 0; transform: scale(.9); } }
+#sim {
+        --ground:        #e7eaee;
+    --surface:       #fcfcfb;
+    --surface-sunk:  #f1f2f0;
+    --hairline:      #d3d7dc;
+    --hairline-soft: #e4e7ea;
+    --ink: var(--text);
+    --ink-2:         #52514e;
+    --ink-3:         #85847f;
+    --field:         #f7f8f7;
+    --link:          #c6ccd3;
+    --node:          #9aa3ac;
+    --s-oracle:   #2a78d6;
+    --s-flood:    #eb6834;
+    --s-hmulti:   #1baf7a;
+    --s-amigo:    #8a5bd6;
+    --s-amigo-udx: #d6478f;
+    --s-f3:       #eda100;
+    --r: 3px;
+  }
+@media (prefers-color-scheme: dark) {
+#sim {
+            --ground:        #0e1013;
+      --surface:       #1a1a19;
+      --surface-sunk:  #141514;
+      --hairline:      #2e302f;
+      --hairline-soft: #232524;
+      --ink: var(--text);
+      --ink-2:         #c3c2b7;
+      --ink-3:         #8b8a82;
+      --field:         #131414;
+      --link:          #34383c;
+      --node:          #6b7076;
+      --s-oracle:   #3987e5;
+      --s-flood:    #d95926;
+      --s-hmulti:   #199e70;
+      --s-amigo:    #a47ae6;
+      --s-amigo-udx: #e0689f;
+      --s-f3:       #c98500;
+    }
+}
+#sim * { box-sizing: border-box; }
+#sim [hidden] { display: none !important; }
+#sim {
+    margin: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+#sim .sim-wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+#sim .masthead { display: flex; flex-direction: column; gap: 10px; }
+#sim .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+#sim .sim-title {
+    font-family: var(--mono);
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin: 0;
+    text-wrap: balance;
+  }
+#sim .standfirst {
+    margin: 0;
+    max-width: 64ch;
+    color: var(--ink-2);
+  }
+#sim .modes { display: flex; gap: 2px; background: var(--surface-sunk); border: 1px solid var(--hairline); border-radius: var(--r); padding: 2px; width: fit-content; }
+#sim .modes button {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+#sim .modes button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.10); }
+#sim .modes button:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+#sim .rig { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: 20px; align-items: start; }
+@media (max-width: 940px) {
+#sim .rig { grid-template-columns: minmax(0, 1fr); }
+}
+#sim .panel {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+  }
+#sim .panel-hd {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hairline-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+#sim .sub-modes { display: inline-flex; gap: 2px; }
+#sim .sub-modes button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 9px; border: 1px solid var(--hairline); border-radius: 2px;
+    background: transparent; color: var(--ink-3); cursor: pointer;
+  }
+#sim .sub-modes button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+#sim .sub-modes button:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+#sim .field-wrap { position: relative; background: var(--field); border-radius: 0 0 var(--r) var(--r); }
+#sim canvas { display: block; cursor: crosshair; width: 100%; height: auto; border-radius: 0 0 var(--r) var(--r); }
+#sim .readout {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--hairline-soft);
+  }
+#sim .readout div { padding: 10px 14px; border-right: 1px solid var(--hairline-soft); }
+#sim .readout div:last-child { border-right: 0; }
+#sim .readout dt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 2px;
+  }
+#sim .readout dd {
+    margin: 0; font-family: var(--mono); font-size: 20px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+#sim .readout .unit { font-size: 11px; font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+#sim .rail { display: flex; flex-direction: column; gap: 14px; }
+#sim .algos { display: flex; flex-direction: column; }
+#sim .algo {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    width: 100%;
+    text-align: left;
+    padding: 11px 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--hairline-soft);
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+#sim .algo:last-child { border-bottom: 0; }
+#sim .algo:hover { background: var(--surface-sunk); }
+#sim .algo:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: -2px; }
+#sim .algo[aria-pressed="true"] { background: var(--surface-sunk); }
+#sim .swatch { width: 10px; height: 10px; border-radius: 2px; margin-top: 5px; background: var(--c); }
+#sim .algo[aria-pressed="true"] .swatch { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 26%, transparent); }
+#sim .algo-name, #sim .algo-rule, #sim .algo-arm { display: block; }
+#sim .algo-arm { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 3px; }
+#sim .algo-arm code { font-family: var(--mono); }
+#sim .algo-name { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+#sim .algo[aria-pressed="true"] .algo-name { color: var(--c); }
+#sim .algo-rule { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+#sim .tag {
+    display: inline-block; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 2px; vertical-align: 1px;
+    border: 1px solid currentColor; margin-left: 6px; color: var(--ink-3);
+  }
+#sim .controls { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+#sim .row { display: flex; align-items: center; gap: 10px; }
+#sim .row label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); flex: 0 0 auto; }
+#sim .row output { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink); margin-left: auto; }
+#sim input[type="range"] { flex: 1 1 auto; accent-color: var(--s-oracle); min-width: 0; }
+#sim .sim-btn {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 2px;
+    background: var(--surface-sunk); color: var(--ink); cursor: pointer; flex: 1 1 auto;
+  }
+#sim .sim-btn:hover { border-color: var(--ink-3); }
+#sim .sim-btn:focus-visible { outline: 2px solid var(--s-oracle); outline-offset: 1px; }
+#sim .sim-btn-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+#sim .status {
+    margin: 0; padding: 10px 14px; border-top: 1px solid var(--hairline-soft);
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.5; color: var(--ink-2);
+  }
+#sim .status b { color: var(--c, var(--ink)); font-weight: 600; }
+#sim .sk-group { display: flex; flex-direction: column; gap: 9px; padding-top: 11px; border-top: 1px solid var(--hairline-soft); }
+#sim .sk-group.off { opacity: 0.45; }
+#sim .sk-hd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+#sim .sk-hd span { text-transform: none; letter-spacing: 0; }
+#sim .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 12px 14px; border-top: 1px solid var(--hairline-soft); }
+#sim .legend span { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+#sim .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+#sim .ring { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1.5px solid var(--c, var(--ink-3)); }
+#sim .seg { width: 12px; height: 0; display: inline-block; border-top: 1px solid var(--ink-3); opacity: .6; }
+#sim .seg.solid { border-top: 2px solid var(--c, var(--ink-3)); opacity: 1; }
+#sim .seg.dashed { border-top: 2px dashed var(--c, var(--ink-3)); opacity: 1; }
+#sim .cp { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: 20px; align-items: start; }
+@media (max-width: 940px) {
+#sim .cp { grid-template-columns: minmax(0, 1fr); }
+}
+#sim .steps { display: flex; flex-direction: column; }
+#sim .step {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 14px;
+    padding: 14px; border-bottom: 1px solid var(--hairline-soft);
+    opacity: 0.34; transition: opacity .45s ease, background .45s ease;
+  }
+#sim .step:last-child { border-bottom: 0; }
+#sim .step.on { opacity: 1; }
+#sim .step.on.extra { background: color-mix(in srgb, var(--c) 8%, transparent); }
+#sim .step-n {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; padding-top: 3px;
+  }
+#sim .step h3 { margin: 0 0 3px; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+#sim .step.extra h3 { color: var(--c); }
+#sim .step p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; max-width: 62ch; }
+#sim .wire {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; padding: 3px 7px;
+    border: 1px dashed var(--hairline); border-radius: 2px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-2);
+  }
+#sim .step.extra .wire { border-color: color-mix(in srgb, var(--c) 55%, transparent); border-style: solid; }
+#sim .arrow { color: var(--ink-3); }
+#sim .ledger { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+#sim .ledger h3 { margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; }
+#sim .ledger p { margin: 0; font-size: 13px; color: var(--ink-2); }
+#sim .cost { display: flex; flex-direction: column; gap: 7px; }
+#sim .cost-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: baseline; font-size: 12.5px; }
+#sim .cost-row span:last-child { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-align: right; }
+#sim .verdict {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.5;
+    padding: 10px 12px; border-left: 2px solid var(--c);
+    background: var(--surface-sunk); color: var(--ink-2);
+  }
+#sim .measured { display: flex; flex-direction: column; gap: 14px; }
+#sim table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+#sim caption { text-align: left; font-size: 13px; color: var(--ink-2); padding: 0 0 10px; max-width: 70ch; }
+#sim th, #sim td { padding: 7px 10px; text-align: right; font-family: var(--mono); font-size: 12.5px; border-bottom: 1px solid var(--hairline-soft); }
+#sim th { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 400; }
+#sim th:first-child, #sim td:first-child { text-align: left; }
+#sim td.name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+#sim tbody tr:last-child td { border-bottom: 0; }
+#sim .cliff { color: var(--s-flood); font-weight: 600; }
+#sim .scroller { overflow-x: auto; }
+#sim .charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0 14px 4px; }
+@media (max-width: 900px) {
+#sim .charts { grid-template-columns: minmax(0, 1fr); }
+}
+#sim .chart { display: flex; flex-direction: column; gap: 6px; position: relative; }
+#sim .chart h3 { margin: 0; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: -0.01em; }
+#sim .chart p { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.4; min-height: 4.2em; }
+#sim .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+#sim .ax { font-family: var(--mono); font-size: 9.5px; fill: var(--ink-3); }
+#sim .unit-cap { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+#sim .grid-line { stroke: var(--hairline-soft); stroke-width: 1; }
+#sim .keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px 20px; padding: 6px 14px 16px; }
+@media (max-width: 900px) {
+#sim .keys { grid-template-columns: minmax(0, 1fr); }
+}
+#sim .key { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 8px; align-items: start; }
+#sim .key .dot { margin-top: 5px; }
+#sim .key b { font-family: var(--mono); font-size: 11.5px; font-weight: 600; display: block; }
+#sim .key span { font-size: 11.5px; color: var(--ink-2); line-height: 1.35; display: block; }
+#sim .tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s ease;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 2px;
+    padding: 7px 9px; font-family: var(--mono); font-size: 10.5px; line-height: 1.55;
+    box-shadow: 0 4px 14px rgba(0,0,0,.16); z-index: 5; width: 152px;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+#sim .tip-hd { color: var(--ink-3); letter-spacing: 0.06em; margin-bottom: 3px; }
+#sim .tip-row { display: flex; align-items: center; gap: 6px; }
+#sim .tip-row b { font-weight: 600; margin-left: auto; }
+#sim .model { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
+@media (max-width: 900px) {
+#sim .model { grid-template-columns: minmax(0, 1fr); }
+}
+#sim .model-col { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+#sim .model-col + .model-col { border-left: 1px solid var(--hairline-soft); }
+@media (max-width: 900px) {
+#sim .model-col + .model-col { border-left: 0; border-top: 1px solid var(--hairline-soft); }
+}
+#sim .model h3 {
+    margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 400;
+  }
+#sim .model p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; max-width: 60ch; }
+#sim .model p b { color: var(--ink); font-weight: 600; }
+#sim .eq {
+    padding: 10px 12px; background: var(--surface-sunk); border-radius: 2px;
+    overflow-x: auto; font-size: 15px;
+  }
+#sim .eq math { font-family: var(--mono); }
+#sim .defs { display: flex; flex-direction: column; gap: 7px; }
+#sim .def { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; font-size: 12.5px; align-items: baseline; }
+#sim .def dt { font-family: var(--mono); color: var(--ink); }
+#sim .def dd { margin: 0; color: var(--ink-2); line-height: 1.4; }
+#sim .params { width: 100%; border-collapse: collapse; }
+#sim .params td { padding: 5px 8px; font-size: 12.5px; border-bottom: 1px solid var(--hairline-soft); }
+#sim .params tr:last-child td { border-bottom: 0; }
+#sim .params td:first-child { font-family: var(--mono); width: 46px; color: var(--ink); }
+#sim .params td:last-child { font-family: var(--mono); text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+#sim .params td:nth-child(2) { color: var(--ink-2); }
+#sim .note { font-size: 12.5px; color: var(--ink-3); max-width: 74ch; margin: 0; }
+#sim .note code { font-family: var(--mono); font-size: 11.5px; }
+@media (prefers-reduced-motion: reduce) {
+#sim * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+  /* Projects */
+  .cards { display: grid; gap: 1rem; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; gap: .5rem; transition: border-color .15s; }
+  .card:hover { border-color: var(--accent); }
+  .card .stack { margin-top: auto; padding-top: .5rem; font: 400 .75rem/1.5 var(--mono); color: var(--muted); }
+
+  /* Writing & talks: the note hides itself once the list has entries. */
+  .entries > li + li { margin-top: 1.25rem; }
+  .entries:not(:empty) + .empty-note { display: none; }
+
+  /* About, contact */
+  .prose p + p { margin-top: 1rem; }
+  .contact-list > li { display: grid; gap: 0; }
+  .contact-list > li + li { margin-top: 1rem; }
+  .label { font: 400 .75rem/1.6 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+  footer { padding: 2.5rem 0 3rem; border-top: 1px solid var(--line); font-size: .875rem; color: var(--muted); }
+
+  @media (min-width: 40rem) {
+    .wrap { padding: 0 2rem; }
+    .intro { padding: 7rem 0 5rem; }
+    .portrait { width: 8rem; height: 8rem; }
+    section { padding: 4.5rem 0; }
+    .timeline > li, .facts > div, .contact-list > li, .skills > div { grid-template-columns: 9rem 1fr; gap: 1.5rem; }
+    .contact-list .label { padding-top: .1rem; }
+    .cards { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header wrap">
+  <nav aria-label="Sections">
+    <ul>
+      <li><a href="#work">Work</a></li>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <!-- <li><a href="#writing">Writing</a></li> -->
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+
+  <!-- Intro -->
+  <div class="intro">
+    <img class="portrait" src="assets/portrait-256.webp" width="128" height="128" alt="Dan Bachar" decoding="async">
+    <h1>Dan Bachar</h1>
+    <p>Distributed systems engineer. I build networked, web, and peer-to-peer systems — from protocol design to production.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="mailto:dan@bachar.co">Email me</a>
+      <a class="btn btn-secondary" href="https://github.com/danbachar" rel="me">GitHub</a>
+    </div>
+  </div>
+
+  <!-- Work -->
+  <section id="work" aria-labelledby="work-h">
+    <h2 id="work-h">Work</h2>
+    <ol class="timeline">
+      <li>
+        <p class="when">2023–2025</p>
+        <div class="body">
+          <h3>Lead Developer &amp; Senior Distributed Systems Researcher</h3>
+          <p class="where">Siemens AG, Munich</p>
+          <ul class="bullets">
+            <li>Led R&amp;D of demonstrators for distributed industrial IoT edge systems in the EU-funded Edgeless project.</li>
+            <li>Designed a graph-based configuration tool for edge network topology (ReactFlow).</li>
+            <li>Built a cluster management platform for industrial computers with system-level snapshotting.</li>
+            <li>Built a 6G satellite communication handover system for next-generation EU rail.</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <p class="when">2022–2023</p>
+        <div class="body">
+          <h3>Frontend Tech Lead</h3>
+          <p class="where">Applied Security GmbH / SITS AG, Großwallstadt</p>
+          <p>Led frontend development of the public statutory health insurance portal of DASBV GmbH. Introduced state management (Redux), clean-code standards, TDD and static analysis (SonarQube); test coverage to 80%.</p>
+        </div>
+      </li>
+      <li>
+        <p class="when">2018–2019</p>
+        <div class="body">
+          <h3>Fullstack Developer</h3>
+          <p class="where">mantro GmbH, Munich</p>
+          <ul class="bullets">
+            <li><strong>Mobiko</strong>, employee mobility platform: designed an algorithmic solution to a variant of the knapsack problem for tax-optimized expense allocation. Angular, NestJS.</li>
+            <li><strong>Jagdgefährte</strong>, hunting application: optimized database query performance, cutting request latency by 25%. NestJS, Postgres.</li>
+            <li><strong>company42</strong>, industrial IoT computer-vision device: led backend development and product ownership; designed a parallelized inference layer for querying edge-deployed CV models. Go.</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <p class="when">2017</p>
+        <div class="body">
+          <h3>Frontend Engineer</h3>
+          <p class="where">Cellebrite, Petah Tikva</p>
+          <p>Product ownership and frontend development of a smartphone diagnostics and repair platform. Integration lead across the backend, mobile, customization and core-module teams. Led client demonstrations and restructured the customer feedback loop to bring overseas customers into development sprints, about 25% more sprint throughput.</p>
+        </div>
+      </li>
+      <li>
+        <p class="when">2014–2017</p>
+        <div class="body">
+          <h3>Fullstack Developer</h3>
+          <p class="where">Matzpen, C4I Corps, IDF</p>
+          <p>Designed and maintained the cross-network database synchronization between civilian and military networks behind the IDF's public web infrastructure. Maintained mission-critical J2EE enterprise applications. Led the modernization of a legacy monolith, migrating JSP web apps to component-based frontends in Angular and TypeScript.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3 class="sub">Education</h3>
+    <ol class="timeline">
+      <li>
+        <p class="when">2023–2026</p>
+        <div class="body">
+          <h3>M.Sc. Informatik, TU Munich</h3>
+          <p class="where">Distributed Systems, Computer Networks &amp; Architecture</p>
+          <p>Master thesis: <em>Revisiting Local Area Peer-to-Peer Overlays for Grassroots Social Networks</em>. Research Fellow, TU Munich &amp; Technion, Haifa, 2025–2026, in a research collaboration between the Technion, TU Munich and the Weizmann Institute. <a href="#research">Details under Research.</a></p>
+        </div>
+      </li>
+      <li>
+        <p class="when">2019–2023</p>
+        <div class="body">
+          <h3>B.Sc. Informatik, TU Munich</h3>
+          <p>Bachelor thesis: <em>Enhancing Distributed REST APIs on the Fly</em>.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3 class="sub">Skills</h3>
+    <dl class="skills">
+      <div>
+        <dt>Areas</dt>
+        <dd class="tags"><span class="skill">Fullstack</span><span class="skill">Distributed systems</span><span class="skill">Networking</span></dd>
+      </div>
+      <div>
+        <dt>Languages</dt>
+        <dd class="tags"><span class="skill">Go</span><span class="skill">Rust</span><span class="skill">TypeScript</span><span class="skill">Node.js</span><span class="skill">Python</span><span class="skill">Java</span><span class="skill">C#</span><span class="skill">Dart</span></dd>
+      </div>
+      <div>
+        <dt>Networking &amp; protocols</dt>
+        <dd class="tags"><span class="skill">libp2p</span><span class="skill">WebRTC</span><span class="skill">BLE</span><span class="skill">UDP</span><span class="skill">QUIC</span><span class="skill">Noise encryption</span></dd>
+      </div>
+      <div>
+        <dt>Databases &amp; stores</dt>
+        <dd class="tags"><span class="skill">PostgreSQL</span><span class="skill">SQLite</span><span class="skill">Redis</span></dd>
+      </div>
+      <div>
+        <dt>Frontend</dt>
+        <dd class="tags"><span class="skill">Angular</span><span class="skill">React</span><span class="skill">Svelte</span></dd>
+      </div>
+      <div>
+        <dt>Infrastructure</dt>
+        <dd class="tags"><span class="skill">Docker</span><span class="skill">Kubernetes</span><span class="skill">GCP</span></dd>
+      </div>
+      <div>
+        <dt>Embedded</dt>
+        <dd class="tags"><span class="skill">Arduino</span><span class="skill">Raspberry Pi</span><span class="skill">ESP32</span></dd>
+      </div>
+      <div>
+        <dt>AI-assisted development</dt>
+        <dd class="tags"><span class="skill">Claude</span><span class="skill">Codex</span><span class="skill">Copilot</span></dd>
+      </div>
+    </dl>
+
+    <p class="sub"><a href="cv.pdf">Full CV (PDF)</a></p>
+  </section>
+
+  <!-- Research -->
+  <section id="research" aria-labelledby="research-h">
+    <h2 id="research-h">Research</h2>
+    <h3>Grassroots Social Networking</h3>
+    <p class="lead">Governments shut the Internet down during protests, and disasters cut it physically; people then turn to peer-to-peer messaging. Grassroots Social Networking is a peer-to-peer overlay for messaging and social networking that runs strictly on the smartphones of its users, with no servers, relays or shared ledgers. One application-layer overlay sits on two underlays: a BLE mesh between devices in radio range, and, when an Internet path exists, direct NAT-traversed streams between friends. Messages are relayed along the social graph only.</p>
+    <p>My thesis measures BLE link formation and multi-hop delivery on a testbed of eight commodity smartphones, and uses those measurements to parameterize simulations of the system at scale. BLE alone cannot carry a grassroots social network at scale: delivery is bounded by the radio airtime a node shares among its active links, not by range, and a second Internet underlay that bridges parts of the mesh is needed.</p>
+    <p class="muted">Joint research between the Technion, TU Munich and the Weizmann Institute.</p>
+
+    <dl class="facts">
+      <div>
+        <dt>Transport &amp; protocol</dt>
+        <dd>BLE mesh underlay and an Internet underlay carrying UDX streams; NAT hole-punching and a rendezvous protocol; UDX against QUIC trade-offs; store-carry-forward buffering; relay restricted to the social graph.</dd>
+      </div>
+      <div>
+        <dt>Security</dt>
+        <dd>Public-key identities; Noise XX sessions over Curve25519 with ChaCha20-Poly1305.</dd>
+      </div>
+      <div>
+        <dt>Implementation</dt>
+        <dd>UDX, a reliable stream protocol implemented on top of UDP, as the Internet transport; a libp2p-style bootstrap node on GCP as a grassroots rendezvous server.</dd>
+      </div>
+      <div>
+        <dt>Evaluation</dt>
+        <dd>A testbed of eight smartphones across hardware classes, with tracing instruments for link formation and clique delivery under contention; simulations of link-establishment and packet-forwarding rules, parameterized by the measured link distributions.</dd>
+      </div>
+      <div>
+        <dt>Current work</dt>
+        <dd>A NAT topology and hole-punching survey: libp2p's AutoNAT in a grassroots approach, using multiple connected friends to characterize the NAT a peer sits behind.</dd>
+      </div>
+    </dl>
+
+    <h3 class="sub" id="simulation">Simulation</h3>
+    <p>My thesis, in the browser. Simulations show six packet-forwarding rules that use the BLE mesh, as well as UDX (a minimal UDP-based protocol we developed to provide reliable streams). The backend is Go compiled to WebAssembly with TinyGo, and loads when you scroll here. </p>
+    <div class="sim">
+<div id="sim" class="sim-wrap">
+  <div class="modes" role="tablist" aria-label="View">
+    <button role="tab" id="tab-data" aria-selected="true" aria-controls="view-data">Visualizer</button>
+    <button role="tab" id="tab-ctrl" aria-selected="false" aria-controls="view-ctrl">Info</button>
+  </div>
+
+  <!-- ============ DATA PLANE ============ -->
+  <section class="rig" id="view-data" role="tabpanel" aria-labelledby="tab-data">
+    <div class="panel">
+      <div class="panel-hd">
+        <span>Live mesh · traffic runs continuously</span>
+        <span id="topo-readout">—</span>
+      </div>
+      <div class="field-wrap"><canvas id="field" width="1200" height="760"></canvas></div>
+      <div class="row actions">
+        <button class="sim-btn sim-btn-primary" id="send">Send message</button>
+        <button class="sim-btn" id="replay">Random pair</button>
+      </div>
+      <dl class="readout">
+        <div><dt>Our message · hops</dt><dd id="m-hops">—</dd></div>
+        <div><dt>Our message · transmissions</dt><dd id="m-tx">—</dd></div>
+        <div><dt>Our message · vs flood</dt><dd id="m-ratio">—</dd></div>
+        <div><dt>Mesh · packets in custody</dt><dd id="m-hold">0</dd></div>
+      </dl>
+      <p class="status" id="status">Press Send to deliver one message under the selected rule.</p>
+      <p class="status" id="inspect" hidden></p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--ink)"></i>sender (click a node)</span>
+        <span><i class="dot" style="background:var(--s-oracle)"></i>recipient (click another)</span>
+        <span><i class="dot" id="lg-hold"></i>has seen our message</span>
+        <span><i class="dot" style="background:var(--node);opacity:.5"></i>carrying background traffic</span>
+        <span id="lg-entry" hidden><i class="ring"></i><span id="lg-entry-text"></span></span>
+        <span id="lg-inter" hidden><i class="seg"></i><span id="lg-inter-text">link leaving a cluster</span></span>
+        <span id="lg-over" hidden><i class="seg dashed"></i><span id="lg-over-text"></span></span>
+        <span id="lg-form" hidden><i class="seg solid"></i>link just formed</span>
+        <span id="lg-drop" hidden><i class="seg dashed"></i>link just dropped</span>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="panel">
+        <div class="panel-hd"><span>Forwarding rule</span></div>
+        <div class="algos" id="algos"></div>
+      </div>
+    </div>
+    <div class="panel field-panel">
+      <div class="panel-hd"><span>Field</span></div>
+        <div class="controls">
+          <div class="row">
+            <label for="nodes">Per cell</label>
+            <input type="range" id="nodes" min="1" max="20" step="1" value="8">
+            <output id="nodes-out">8 · 128 total</output>
+          </div>
+          <div class="row">
+            <label for="p-links">Links</label>
+            <input type="range" id="p-links" min="1" max="12" step="1" value="7">
+            <output id="p-links-out">7 per node</output>
+          </div>
+          <div class="row">
+            <label for="p-world">Hall</label>
+            <input type="range" id="p-world" min="0" max="3" step="1" value="0">
+            <output id="p-world-out">200 m</output>
+          </div>
+          <div class="row">
+            <label for="p-cell">Cell</label>
+            <input type="range" id="p-cell" min="0" max="4" step="1" value="3">
+            <output id="p-cell-out">50 m · 4×4</output>
+          </div>
+          <div class="row">
+            <label for="p-age">Expiry</label>
+            <input type="range" id="p-age" min="100" max="3000" step="100" value="1500">
+            <output id="p-age-out">1500 ticks</output>
+          </div>
+          <div class="row">
+            <label for="p-tick">Speed</label>
+            <input type="range" id="p-tick" min="40" max="400" step="20" value="140">
+            <output id="p-tick-out">140 ms</output>
+          </div>
+          <div class="row">
+            <label for="seed">Seed</label>
+            <input type="range" id="seed" min="1" max="12" step="1" value="3">
+            <output id="seed-out">3</output>
+          </div>
+          <div class="notes">
+          <p class="note"><b>Setup.</b> <em>Hall</em> sets the square's side. A
+            cluster is one cell of it and the radio reaches one cell side, so <em>Cell</em> sets the
+            cluster size, the range and how many clusters the hall divides into at once — which is also
+            why every member can hear into a neighbouring cluster. The seed fixes the topology and the
+            sender–recipient pair, so switching rules repeats the same delivery, paired per seed.
+            Speed is wall-clock only — a shorter tick runs the same mesh faster, and the congested
+            rules need it.</p>
+          <p class="note"><b>Scope.</b> The mesh carries background traffic at all
+            times, with custody capped at 60 packets, hop budget 7, and idle link rotation for top-3 —
+            the only rule that runs with the policy on. A node drives <em>all</em> its links at once and
+            its radio's rate is split across the ones transferring, on top of a coarse contention
+            penalty. Our message is injected into that running mesh. The field shows
+            mechanism; every rate we report comes from the measured runs below.</p>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <section class="panel" id="sends-panel" hidden>
+    <div class="panel-hd">
+      <span>Sends on this pair</span><span id="sends-hd">—</span>
+    </div>
+    <div class="charts" id="send-charts"></div>
+    <div class="keys" id="send-keys"></div>
+    <p class="note" style="padding: 0 14px 14px">One point per completed send, in the order you made
+      them. A curve is one rule with one set of parameters, so changing F or the weights starts a new
+      curve rather than moving an old one. Reconfiguring the field clears everything, since the runs
+      would no longer be comparable.</p>
+  </section>
+
+  <!-- ============ CONTROL PLANE ============ -->
+  <section class="cp" id="view-ctrl" role="tabpanel" aria-labelledby="tab-ctrl" hidden>
+    <div class="panel">
+      <div class="panel-hd">
+        <span>Exchanged between two neighbors before any message moves</span>
+        <span id="cp-algo">—</span>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="rail">
+      <div class="panel">
+        <div class="panel-hd"><span>Forwarding rule</span></div>
+        <div class="algos" id="algos2"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span>Cost of the knowledge</span></div>
+        <div class="ledger" id="ledger"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============ MODEL ============ -->
+  <section class="panel model">
+    <div class="model-col">
+      <h3>Suitability score</h3>
+      <p>Every peer advertises a score for itself. A node ranks its links by the score the
+        peer on the far side advertises — it never computes anything about that peer itself.</p>
+      <div class="eq"><math display="block"><mrow>
+        <msub><mi>S</mi><mi>k</mi></msub><mo>=</mo>
+        <mi>&#945;</mi><mo>&#8290;</mo><msub><mi>C</mi><mi>k</mi></msub>
+        <mo>+</mo><mi>&#946;</mi><mo>&#8290;</mo>
+        <mo stretchy="false">(</mo><mn>1</mn><mo>&#8722;</mo>
+        <msub><mi>&#961;</mi><mi>k</mi></msub><mo stretchy="false">)</mo>
+      </mrow></math></div>
+      <dl class="defs">
+        <div class="def"><dt>C<sub>k</sub></dt><dd>Centrality: distinct neighbors that completed a
+          transfer <em>to</em> k within the window W, over the link cap.
+          <math><mrow><msub><mi>C</mi><mi>k</mi></msub><mo>=</mo><mtext>min</mtext>
+          <mo stretchy="false">(</mo><mn>1</mn><mo>,</mo>
+          <mfrac><mrow><msub><mi>f</mi><mi>k</mi></msub><mo stretchy="false">(</mo><mi>W</mi><mo stretchy="false">)</mo></mrow>
+          <msub><mi>D</mi><mi>max</mi></msub></mfrac><mo stretchy="false">)</mo></mrow></math></dd></div>
+        <div class="def"><dt>&#961;<sub>k</sub></dt><dd>Buffer occupancy of k, as a fraction of its
+          custody store.
+          <math><mrow><msub><mi>&#961;</mi><mi>k</mi></msub><mo>=</mo>
+          <mfrac><mrow><mi>B</mi><mo>&#8722;</mo><msub><mi>B</mi><mi>free</mi></msub></mrow><mi>B</mi></mfrac></mrow></math></dd></div>
+      </dl>
+      <h3>Gate and lanes</h3>
+      <p>A link is a lane if its peer passes the gate. The node floods each message on its top
+        F lanes only; messages addressed to a link's own peer bypass lanes entirely.</p>
+      <div class="eq"><math display="block"><mrow>
+        <msub><mi>L</mi><mi>k</mi></msub><mo>=</mo>
+        <mtext>top-</mtext><mi>F</mi><mspace width="0.2em"/>
+        <mo stretchy="false">{</mo>
+        <mi>j</mi><mo>&#8712;</mo><mi>N</mi><mo stretchy="false">(</mo><mi>k</mi><mo stretchy="false">)</mo>
+        <mo>:</mo><msub><mi>S</mi><mi>j</mi></msub><mo>&#8805;</mo><mi>&#952;</mi>
+        <mo stretchy="false">}</mo>
+      </mrow></math></div>
+    </div>
+
+    <div class="model-col">
+      <h3>On the wire</h3>
+      <p>Both terms ride the peer's ANNOUNCE, quantized to one byte and refreshed once per
+        announce epoch, so every decision runs on values as stale as that interval.
+        Quantization is load-bearing: with raw doubles, jitter in &#961; reshuffles near-tied
+        rankings on every announce, and the resulting preemption storm aborts transfers
+        mesh-wide.</p>
+      <div class="eq"><math display="block"><mrow>
+        <mi>q</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo>
+        <mfrac><mrow><mtext>round</mtext><mo stretchy="false">(</mo><mn>255</mn><mi>x</mi><mo stretchy="false">)</mo></mrow><mn>255</mn></mfrac>
+      </mrow></math></div>
+      <h3>Parameters in these runs</h3>
+      <table class="params">
+        <tr><td>&#945;</td><td>weight on centrality</td><td>0.5</td></tr>
+        <tr><td>&#946;</td><td>weight on free buffer</td><td>0</td></tr>
+        <tr><td>&#952;</td><td>gate threshold, inclusive</td><td>0</td></tr>
+        <tr><td>F</td><td>lane fan-out</td><td>3</td></tr>
+        <tr><td>W</td><td>centrality window</td><td>60 s</td></tr>
+        <tr><td>D<sub>max</sub></td><td>concurrent link cap</td><td>7</td></tr>
+        <tr><td>&#8212;</td><td>announce interval</td><td>5 s</td></tr>
+      </table>
+      <p><b>With &#946; = 0 the score reduces to S<sub>k</sub> = &#945;C<sub>k</sub>:</b> this arm ranks
+        by centrality alone. &#952; = 0 under the inclusive gate admits every peer, including those
+        that have fed nobody yet.</p>
+    </div>
+  </section>
+
+  <!-- ============ MEASURED ============ -->
+  <section class="panel measured">
+    <div class="panel-hd"><span>Measured · 2,750 runs · n = 50 per cell</span><span>stationary hall</span></div>
+    <div class="charts" id="charts"></div>
+    <div class="keys" id="keys"></div>
+    <div class="scroller" style="padding: 14px">
+      <table>
+        <caption>Delivery by node count, mean of fifty paired runs — five node placements,
+          ten replicates each. The flood has no working regime here: 0.404 at its sparsest, falling
+          from there. Cluster addressing holds above 0.96 throughout, at a twentieth of the
+          airtime.</caption>
+        <thead>
+          <tr><th scope="col">Rule</th><th scope="col">160</th><th scope="col">240</th><th scope="col">320</th><th scope="col">400</th><th scope="col">480</th><th scope="col">relays / delivered</th></tr>
+        </thead>
+        <tbody id="measured-body"></tbody>
+      </table>
+    </div>
+    <div class="note" style="padding: 0 14px 16px; display:flex; flex-direction:column; gap:8px">
+      <p style="margin:0"><b>Measures.</b> Relays per delivered message is our airtime proxy, listed at
+        480 nodes. A shortest path costs its hop count, so the oracle stays at 8.2 → 10.0 across a
+        threefold rise in node count while the flood goes 116 → 371: flooding costs <code>O(n)</code>
+        per message, directed forwarding <code>O(hops)</code>. Read the flood's median latency against
+        its delivery — it falls with density only because the slow messages stop arriving at all.</p>
+      <p style="margin:0"><b>Threats to validity.</b> The simulator keeps an exact set of seen packet
+        ids per peer; the implementation uses a Bloom filter of 96,000 bits over at most 10,000 items
+        at ~1% false positives, rotating every 5 minutes. The modelled seen-set never errs, never
+        fills and never forgets, so the sync exchange is cheaper here than on a device. The two errors
+        do not cancel: a false positive skips a packet the node lacks, costing delivery where copies
+        are fewest, while rotation forgets and old packets are reflooded, costing airtime where copies
+        are most. We report relays per delivered as a lower bound, for every rule.</p>
+    </div>
+  </section>
+  <div class="sk-pop" id="sk-pop" hidden role="dialog" aria-label="Score parameters">
+    <button class="sk-close" id="sk-close" type="button" aria-label="Close">&#215;</button>
+          <div class="sk-group" id="sk-group">
+            <div class="sk-hd">Score parameters <span id="sk-scope">— top-3 only</span></div>
+            <div class="row">
+              <label for="p-alpha">&#945;</label>
+              <input type="range" id="p-alpha" min="0" max="1" step="0.25" value="0.5">
+              <output id="p-alpha-out">0.50</output>
+            </div>
+            <div class="row">
+              <label for="p-beta">&#946;</label>
+              <input type="range" id="p-beta" min="0" max="1" step="0.25" value="0">
+              <output id="p-beta-out">0.00</output>
+            </div>
+            <div class="row">
+              <label for="p-fanout">F</label>
+              <input type="range" id="p-fanout" min="1" max="7" step="1" value="3">
+              <output id="p-fanout-out">3</output>
+            </div>
+            <p class="note" style="margin:0" id="sk-note"></p>
+          </div>
+  </div>
+</div>
+    </div>
+  </section>
+
+  <!-- Projects -->
+  <section id="projects" aria-labelledby="projects-h">
+    <h2 id="projects-h">Projects</h2>
+    <!-- To link a project, wrap its title: <h3><a href="https://github.com/danbachar/repo">Title</a></h3> -->
+    <ul class="cards">
+      <li class="card">
+        <h3>CRI-O</h3>
+        <p>Kubernetes Container Runtime Interface</p>
+        <p class="stack">Contributor</p>
+      </li>
+      <li class="card">
+        <h3>Resilient decentralized communication for unstructured P2P networks</h3>
+        <p>Measured the RSSI of BLE advertisements between Raspberry Pi nodes at increasing distances, fitted a path-loss model, and used it to parameterize simulations.</p>
+        <p class="stack">BLE · Raspberry Pi · Python · Java</p>
+      </li>
+      <li class="card">
+        <h3>Smart library</h3>
+        <p>An IoT-based smart library system: a Rust backend over Postgres and MQTT for books, study rooms and users management, a Svelte client to borrow books and find study rooms to read them, a PN532 NFC reader for book identification, and ESP32 camera nodes feeding a MobileNetV2-SSD occupancy detector on a Raspberry Pi.</p>
+        <p class="stack">Rust · axum · Postgres · MQTT · Svelte · ESP32</p>
+      </li>
+      <li class="card">
+        <h3>Personal finance tracker</h3>
+        <p>Self-hosted, with a Bank Hapoalim scraper and a Telegram bot that takes receipts and OCRs them.</p>
+        <p class="stack">SvelteKit · SQLite · Telegram</p>
+      </li>
+      <li class="card">
+        <h3>Haifa cable-car status bot</h3>
+        <p>Telegram bot reporting the status of the Technion-Haifa cable car</p>
+        <p class="stack">Telegram · Docker</p>
+      </li>
+      <li class="card">
+        <h3>Wedding website</h3>
+        <p>I wanted to learn Svelte.</p>
+        <p class="stack">Svelte · Tailwind · Vercel</p>
+      </li>
+    </ul>
+  </section>
+
+  <!-- About -->
+  <section id="about" aria-labelledby="about-h">
+    <h2 id="about-h">About</h2>
+    <div class="prose">
+      <p>I moved to Jerusalem, after spending eight years in Munich for my university degrees. </p>
+      <p>Moving to Munich 2017 to pursue my passion for knowledge and to learn more about how computers work, I lived in Tel Aviv before the move while working for Cellebrite, which was my first job after service in Matzpen (מצפן) for three years, where my team worked on the IDF's websites and critical network infrastructure. </p>
+      <p>In my free time I am a hobby woodworker and carpenter, I run and cycle, make bread, and ferment pickles.</p>
+      <p class="muted">Native Hebrew speaker, bilingual English, and full working proficiency with C1 German.</p>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" aria-labelledby="contact-h">
+    <h2 id="contact-h">Contact</h2>
+    <ul class="contact-list">
+      <li><span class="label">Email</span><a href="mailto:dan@bachar.co">dan@bachar.co</a></li>
+      <li><span class="label">GitHub</span><a href="https://github.com/danbachar" rel="me">github.com/danbachar</a></li>
+      <li><span class="label">LinkedIn</span><a href="https://www.linkedin.com/in/dan-bachar-28017a138" rel="me">linkedin.com/in/dan-bachar-28017a138</a></li>
+      <li><span class="label">Bluesky</span><a href="https://bsky.app/profile/dan.bluesky.bachar.co" rel="me">bsky.app/profile/dan.bluesky.bachar.co</a></li>
+      <li><span class="label">CV</span><a href="cv.pdf">cv.pdf</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">© 2026 Dan Bachar</div>
+</footer>
+
+<script>
+  // Loads the simulator once its section comes within reach of the viewport, so the mesh
+  // isn't running while the top of the page is being read.
+  (function () {
+    var sim = document.getElementById('sim');
+    if (!sim) return;
+    function start() {
+      var el = document.createElement('script'); el.type = 'module'; el.src = 'sim/app.js';
+      document.body.appendChild(el);
+    }
+    if (!('IntersectionObserver' in window)) { start(); return; }
+    var io = new IntersectionObserver(function (entries) {
+      if (entries.some(function (e) { return e.isIntersecting; })) { io.disconnect(); start(); }
+    }, { rootMargin: '800px 0px' });
+    io.observe(sim);
+  })();
+</script>
+
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
